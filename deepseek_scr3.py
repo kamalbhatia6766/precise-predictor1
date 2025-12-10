@@ -4,8 +4,13 @@ from datetime import datetime, timedelta
 import warnings
 from collections import Counter, defaultdict
 import math
+import os
 from pathlib import Path
 from quant_excel_loader import load_results_excel
+
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
 
 warnings.filterwarnings('ignore')
 
@@ -271,17 +276,15 @@ class HybridPredictor:
         column_order = ['date'] + [self.slot_names[i] for i in [1, 2, 3, 4]]
         wide_df = wide_df.reindex(columns=column_order)
         
-        # Save timestamped files
         pred_path = SCR3_DIR / f"scr3_predictions_{timestamp}.xlsx"
         detail_path = SCR3_DIR / f"scr3_detailed_{timestamp}.xlsx"
-        
-        wide_df.to_excel(pred_path, index=False)
-        predictions_df.to_excel(detail_path, index=False)
-        
-        # Save latest copies for convenience
-        wide_df.to_excel(SCR3_DIR / "scr3_predictions_latest.xlsx", index=False)
-        predictions_df.to_excel(SCR3_DIR / "scr3_detailed_latest.xlsx", index=False)
-        
+
+        if not is_backtest_mode():
+            wide_df.to_excel(pred_path, index=False)
+            predictions_df.to_excel(detail_path, index=False)
+            wide_df.to_excel(SCR3_DIR / "scr3_predictions_latest.xlsx", index=False)
+            predictions_df.to_excel(SCR3_DIR / "scr3_detailed_latest.xlsx", index=False)
+
         return wide_df, pred_path, detail_path
 
 def main():

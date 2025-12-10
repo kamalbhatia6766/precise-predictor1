@@ -9,6 +9,10 @@ import shutil
 from quant_excel_loader import load_results_excel
 
 
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
+
+
 def normalize_date_column(df: pd.DataFrame) -> pd.DataFrame:
     """
     Ensure we have a consistent 'date' column even if the Excel header is 'DATE'.
@@ -647,17 +651,21 @@ def main():
         predictions_path = os.path.join(predictor.predictions_dir, f"scr2_predictions_{timestamp}.xlsx")
         detailed_path = os.path.join(predictor.predictions_dir, f"scr2_detailed_predictions_{timestamp}.xlsx")
         bet_plan_path = os.path.join(predictor.predictions_dir, f"scr2_bet_plan_{timestamp}.xlsx")
-        
+
         wide_predictions = predictor.create_prediction_sheet(predictions, 'wide')
-        wide_predictions.to_excel(predictions_path, index=False)
-        predictions.to_excel(detailed_path, index=False)
-        bet_plan.to_excel(bet_plan_path, index=False)
-        
-        print("✅ SCR2 predictions generated successfully!")
-        print("💾 Files saved:")
-        print(f"   - {os.path.relpath(predictions_path, predictor.base_dir)}")
-        print(f"   - {os.path.relpath(detailed_path, predictor.base_dir)}")
-        print(f"   - {os.path.relpath(bet_plan_path, predictor.base_dir)}")
+
+        if not is_backtest_mode():
+            wide_predictions.to_excel(predictions_path, index=False)
+            predictions.to_excel(detailed_path, index=False)
+            bet_plan.to_excel(bet_plan_path, index=False)
+
+            print("✅ SCR2 predictions generated successfully!")
+            print("💾 Files saved:")
+            print(f"   - {os.path.relpath(predictions_path, predictor.base_dir)}")
+            print(f"   - {os.path.relpath(detailed_path, predictor.base_dir)}")
+            print(f"   - {os.path.relpath(bet_plan_path, predictor.base_dir)}")
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR2 Excel outputs.")
         
         # Display predictions
         if len(wide_predictions) > 0:

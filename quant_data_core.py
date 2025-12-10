@@ -1,8 +1,10 @@
 # quant_data_core.py - ENHANCED VERSION
+import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime, timedelta
+from datetime import datetime as _dt
 import quant_paths
 
 def load_results_dataframe():
@@ -131,6 +133,18 @@ def load_results_dataframe():
     if df.empty:
         print("❌ No valid DATE values left after DATE sanity filter; exiting gracefully")
         return pd.DataFrame()
+
+    # Optional cutoff for time-machine runs
+    cutoff_str = os.getenv("PREDICTOR_CUTOFF_DATE", "").strip()
+    if cutoff_str:
+        try:
+            cutoff_date = _dt.strptime(cutoff_str, "%Y-%m-%d").date()
+            df = df[df["DATE"].dt.date <= cutoff_date]
+            if df.empty:
+                print("⚠️  Cutoff date filter removed all rows; returning empty DataFrame")
+                return pd.DataFrame()
+        except Exception:
+            print(f"⚠️  Ignoring invalid PREDICTOR_CUTOFF_DATE value: '{cutoff_str}'")
 
     # Ensure slot columns exist and are numeric
     for slot in ["FRBD", "GZBD", "GALI", "DSWR"]:

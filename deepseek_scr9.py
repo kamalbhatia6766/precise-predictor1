@@ -12,6 +12,10 @@ import time
 import quant_data_core
 warnings.filterwarnings('ignore')
 
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
+
 class UltimatePredictionEngine:
     """
     ULTIMATE PREDICTION ENGINE - WITH SPEED MODE
@@ -598,62 +602,60 @@ class UltimatePredictionEngine:
         diag_file = os.path.join(scr9_pred_dir, f'ultimate_diagnostic_{timestamp}.xlsx')
         analysis_file = os.path.join(scr9_pred_dir, f'ultimate_analysis_{timestamp}.txt')
         
-        # Save files to dedicated folder
-        wide_df.to_excel(pred_file, index=False)
-        predictions_df.to_excel(detail_file, index=False)
-        
-        # Create diagnostic file
-        diagnostic_data = []
-        for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
-            slot_data = df[df['slot'] == list(self.slot_names.keys())[list(self.slot_names.values()).index(slot)]]
-            if len(slot_data) > 0:
-                recent = slot_data['number'].tail(10).tolist()
-                freq = Counter(slot_data['number'])
-                hot_numbers = [num for num, count in freq.most_common(5)]
-                
-                diagnostic_data.append({
-                    'slot': slot,
-                    'recent_numbers': ', '.join([f'{n:02d}' for n in recent]),
-                    'hot_numbers': ', '.join([f'{n:02d}' for n in hot_numbers]),
-                    'total_records': len(slot_data)
-                })
-        
-        diag_df = pd.DataFrame(diagnostic_data)
-        diag_df.to_excel(diag_file, index=False)
-        
-        # Report
-        with open(analysis_file, 'w', encoding='utf-8') as f:
-            f.write("=" * 70 + "\n")
-            f.write("  🎯 SCR11 ULTIMATE PREDICTION ENGINE - REPORT\n")
-            f.write("=" * 70 + "\n\n")
-            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Speed Mode: {self.speed_mode.upper()}\n")
-            f.write(f"Records: {len(df)}\n")
-            f.write(f"Range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}\n\n")
-            
-            # Backtest summary
-            if not backtest_results.empty:
-                f.write("BACKTEST SUMMARY:\n")
+        if not is_backtest_mode():
+            wide_df.to_excel(pred_file, index=False)
+            predictions_df.to_excel(detail_file, index=False)
+
+            diagnostic_data = []
+            for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
+                slot_data = df[df['slot'] == list(self.slot_names.keys())[list(self.slot_names.values()).index(slot)]]
+                if len(slot_data) > 0:
+                    recent = slot_data['number'].tail(10).tolist()
+                    freq = Counter(slot_data['number'])
+                    hot_numbers = [num for num, count in freq.most_common(5)]
+
+                    diagnostic_data.append({
+                        'slot': slot,
+                        'recent_numbers': ', '.join([f'{n:02d}' for n in recent]),
+                        'hot_numbers': ', '.join([f'{n:02d}' for n in hot_numbers]),
+                        'total_records': len(slot_data)
+                    })
+
+            diag_df = pd.DataFrame(diagnostic_data)
+            diag_df.to_excel(diag_file, index=False)
+
+            with open(analysis_file, 'w', encoding='utf-8') as f:
+                f.write("=" * 70 + "\n")
+                f.write("  🎯 SCR11 ULTIMATE PREDICTION ENGINE - REPORT\n")
+                f.write("=" * 70 + "\n\n")
+                f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Speed Mode: {self.speed_mode.upper()}\n")
+                f.write(f"Records: {len(df)}\n")
+                f.write(f"Range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}\n\n")
+
+                if not backtest_results.empty:
+                    f.write("BACKTEST SUMMARY:\n")
+                    f.write("-" * 50 + "\n")
+                    for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
+                        slot_results = backtest_results[backtest_results['slot'] == slot]
+                        if not slot_results.empty:
+                            total = len(slot_results)
+                            hit_top5 = slot_results['hit_top5'].sum()
+                            f.write(f"  {slot}: {hit_top5}/{total} hit_top5 ({hit_top5/total*100:.1f}%)\n")
+                    f.write("\n")
+
+                f.write("PREDICTIONS:\n")
                 f.write("-" * 50 + "\n")
-                for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
-                    slot_results = backtest_results[backtest_results['slot'] == slot]
-                    if not slot_results.empty:
-                        total = len(slot_results)
-                        hit_top5 = slot_results['hit_top5'].sum()
-                        f.write(f"  {slot}: {hit_top5}/{total} hit_top5 ({hit_top5/total*100:.1f}%)\n")
-                f.write("\n")
-            
-            # Predictions
-            f.write("PREDICTIONS:\n")
-            f.write("-" * 50 + "\n")
-            for date in wide_df['date'].unique():
-                row = wide_df[wide_df['date'] == date].iloc[0]
-                f.write(f"\n{date} ({row['type']}):\n")
-                for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
-                    if slot in row:
-                        f.write(f"  {slot}: {row[slot]}\n")
-                        if f'{slot}_OPP' in row:
-                            f.write(f"       Opp: {row[f'{slot}_OPP']}\n")
+                for date in wide_df['date'].unique():
+                    row = wide_df[wide_df['date'] == date].iloc[0]
+                    f.write(f"\n{date} ({row['type']}):\n")
+                    for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
+                        if slot in row:
+                            f.write(f"  {slot}: {row[slot]}\n")
+                            if f'{slot}_OPP' in row:
+                                f.write(f"       Opp: {row[f'{slot}_OPP']}\n")
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR9 file outputs.")
         
         # Return file paths for console display
         return wide_df, pred_file, detail_file, diag_file, analysis_file

@@ -8,6 +8,10 @@ import os
 from pathlib import Path
 from quant_excel_loader import load_results_excel
 
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
+
 warnings.filterwarnings('ignore')
 
 class FinalPredictor:
@@ -392,13 +396,15 @@ class FinalPredictor:
         # Save files with timestamped names
         predictions_path = os.path.join(output_dir, f"scr4_predictions_{timestamp}.xlsx")
         detailed_path = os.path.join(output_dir, f"scr4_detailed_{timestamp}.xlsx")
-        
-        wide_df.to_excel(predictions_path, index=False)
-        predictions_df.to_excel(detailed_path, index=False)
-        
-        # Create analysis report
-        report_path = self.create_analysis_report(predictions_df, output_dir, timestamp)
-        
+
+        report_path = None
+        if not is_backtest_mode():
+            wide_df.to_excel(predictions_path, index=False)
+            predictions_df.to_excel(detailed_path, index=False)
+
+            # Create analysis report
+            report_path = self.create_analysis_report(predictions_df, output_dir, timestamp)
+
         return wide_df, predictions_path, detailed_path, report_path
 
     def create_analysis_report(self, predictions_df, output_dir, timestamp):
@@ -461,11 +467,15 @@ def main():
             predictions, SCR4_OUTPUT_DIR, timestamp
         )
         
-        print("✅ Final predictions generated successfully!")
-        print("💾 Files saved:")
-        print(f"   - {pred_path}")
-        print(f"   - {detail_path}")
-        print(f"   - {report_path}")
+        if not is_backtest_mode():
+            print("✅ Final predictions generated successfully!")
+            print("💾 Files saved:")
+            print(f"   - {pred_path}")
+            print(f"   - {detail_path}")
+            if report_path:
+                print(f"   - {report_path}")
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR4 file outputs.")
         
         # Display predictions (unchanged format for SCR9 parsing)
         if len(wide_predictions) > 0:
