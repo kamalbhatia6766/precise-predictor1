@@ -30,7 +30,7 @@ def run_child_script(script_path: str) -> dict:
     stdout_lines = result.stdout.splitlines()
     preds = {}
 
-    pattern = re.compile(r"\b(FRBD|GZBD|GALI|DSWR)\b\s*[:\-]\s*(.*)", re.IGNORECASE)
+    pattern = re.compile(r"^\s*(FRBD|GZBD|GALI|DSWR)\b.*?:\s*(.+)$", re.IGNORECASE)
 
     for line in stdout_lines:
         try:
@@ -39,8 +39,12 @@ def run_child_script(script_path: str) -> dict:
                 continue
             slot = match.group(1).upper()
             nums_part = match.group(2)
-            nums = [n.strip() for n in re.split(r"[,\s]+", nums_part) if n.strip().isdigit()]
-            preds[slot] = [int(n) for n in nums]
+            nums = [
+                str(int(n)).zfill(2)
+                for n in re.split(r"[,\s]+", nums_part)
+                if n.strip().isdigit() and 0 <= int(n.strip()) <= 99
+            ]
+            preds[slot] = nums
         except Exception:
             continue
 
@@ -59,7 +63,11 @@ def build_actual_results(df_full: pd.DataFrame):
         for slot in SLOTS:
             value = row.get(slot)
             if pd.notna(value):
-                actual[(d, slot)] = int(value)
+                try:
+                    num = int(str(value).strip())
+                except (ValueError, TypeError):
+                    continue
+                actual[(d, slot)] = num
     return actual
 
 
@@ -91,10 +99,9 @@ def prepare_dates(df_full: pd.DataFrame):
     else:
         start_date = datetime.strptime(start_str, "%d-%m-%Y").date()
 
-        if start_date <= min_date:
-            raise ValueError(f"Start date must be after {min_date}")
-        if start_date > max_date:
-            raise ValueError(f"Start date cannot exceed {max_date}")
+        valid_min = min_date + timedelta(days=1)
+        if start_date < valid_min or start_date > max_date:
+            raise ValueError(f"Start date must be between {valid_min} and {max_date}")
 
     target_dates = []
     curr = start_date
@@ -154,31 +161,32 @@ def save_master_excel(all_predictions, slot_metrics, roi_rows=None):
         + ["final"]
         + roi_cols
     )
-    df_new = df_new.reindex(columns=[c for c in desired_cols if c in df_new.columns])
+    for col in desired_cols:
+        if col not in df_new.columns:
+            df_new[col] = ""
+    df_new = df_new.reindex(columns=desired_cols)
 
-    if not os.path.exists(MASTER_XLSX):
-        with pd.ExcelWriter(MASTER_XLSX) as writer:
-            df_new.to_excel(writer, sheet_name="raw_predictions", index=False)
-            if roi_rows is not None:
-                pd.DataFrame(roi_rows).to_excel(writer, sheet_name="roi_summary", index=False)
-        return df_new
+    if os.path.exists(MASTER_XLSX):
+        old = pd.read_excel(MASTER_XLSX, sheet_name="raw_predictions")
+        old["KEY"] = old["DATE"].astype(str) + "|" + old["SLOT"].astype(str)
+        df_new["KEY"] = df_new["DATE"].astype(str) + "|" + df_new["SLOT"].astype(str)
 
-    old = pd.read_excel(MASTER_XLSX, sheet_name="raw_predictions")
+        old = old[~old["KEY"].isin(df_new["KEY"])]
+        df_new = pd.concat([old, df_new], ignore_index=True)
 
-    old["KEY"] = old["DATE"].astype(str) + "|" + old["SLOT"].astype(str)
-    df_new["KEY"] = df_new["DATE"].astype(str) + "|" + df_new["SLOT"].astype(str)
-
-    old = old[~old["KEY"].isin(df_new["KEY"])]
-    combined = pd.concat([old, df_new], ignore_index=True)
-    combined = combined.drop(columns=["KEY"])
-    combined = combined.sort_values(["DATE", "SLOT"]).reset_index(drop=True)
+    slot_order = {slot: idx for idx, slot in enumerate(SLOTS)}
+    df_new = df_new.drop(columns=[c for c in df_new.columns if c == "KEY"], errors="ignore")
+    df_new = df_new.sort_values(
+        by=["DATE", "SLOT"],
+        key=lambda col: col.map(slot_order) if col.name == "SLOT" else col,
+    ).reset_index(drop=True)
 
     with pd.ExcelWriter(MASTER_XLSX) as writer:
-        combined.to_excel(writer, sheet_name="raw_predictions", index=False)
+        df_new.to_excel(writer, sheet_name="raw_predictions", index=False)
         if roi_rows is not None:
             pd.DataFrame(roi_rows).to_excel(writer, sheet_name="roi_summary", index=False)
 
-    return combined
+    return df_new
 
 
 def calculate_roi(all_predictions, actual):
@@ -211,20 +219,21 @@ def calculate_roi(all_predictions, actual):
 
         actual_num = str(actual[(date, slot)]).zfill(2)
 
-        ordered = [num for num, _ in votes.most_common()]
+        ordered = [
+            num
+            for num, _ in sorted(
+                votes.items(), key=lambda x: (-x[1], int(x[0]))
+            )
+        ]
         per_slot = {"final": ", ".join(ordered)}
 
         for n in TOP_N_LIST:
             top_list = ordered[:n]
-            if not top_list:
-                stake = 0
-                ret = 0
-                roi_pct = 0.0
-            else:
-                stake = len(top_list)
-                hit = actual_num in top_list
-                ret = 90 if hit else 0
-                roi_pct = (ret - stake) / stake * 100.0
+            stake = len(top_list)
+            hit = actual_num in top_list if top_list else False
+            ret = 90 if hit else 0
+            profit = ret - stake if stake else 0
+            roi_pct = 100.0 * profit / stake if stake else 0.0
 
             total_stake[n] += stake
             total_return[n] += ret
