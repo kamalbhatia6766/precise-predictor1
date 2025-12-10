@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from datetime import datetime, timedelta
 from collections import Counter
@@ -29,15 +30,16 @@ def run_child_script(script_path: str) -> dict:
     stdout_lines = result.stdout.splitlines()
     preds = {}
 
+    pattern = re.compile(r"\b(FRBD|GZBD|GALI|DSWR)\b\s*[:\-]\s*(.*)", re.IGNORECASE)
+
     for line in stdout_lines:
-        if ":" not in line:
-            continue
         try:
-            slot_part, nums_part = line.split(":", 1)
-            slot = slot_part.strip().upper()
-            if slot not in SLOTS:
+            match = pattern.search(line)
+            if not match:
                 continue
-            nums = [n.strip() for n in nums_part.split(",") if n.strip().isdigit()]
+            slot = match.group(1).upper()
+            nums_part = match.group(2)
+            nums = [n.strip() for n in re.split(r"[,\s]+", nums_part) if n.strip().isdigit()]
             preds[slot] = [int(n) for n in nums]
         except Exception:
             continue
@@ -66,13 +68,33 @@ def prepare_dates(df_full: pd.DataFrame):
     max_date = df_full["DATE"].max().date()
 
     print(f"Available DATE range: {min_date} to {max_date}")
-    start_str = input("Enter backtest start date (DD-MM-YYYY): ").strip()
-    start_date = datetime.strptime(start_str, "%d-%m-%Y").date()
+    start_str = input("Enter backtest start date (DD-MM-YYYY, blank = auto): ").strip()
 
-    if start_date <= min_date:
-        raise ValueError(f"Start date must be after {min_date}")
-    if start_date > max_date:
-        raise ValueError(f"Start date cannot exceed {max_date}")
+    if not start_str:
+        start_date = min_date + timedelta(days=1)
+
+        if os.path.exists(MASTER_XLSX):
+            try:
+                df_master = pd.read_excel(MASTER_XLSX, sheet_name="raw_predictions")
+                if "DATE" in df_master.columns and not df_master.empty:
+                    df_master["DATE"] = pd.to_datetime(df_master["DATE"], errors="coerce")
+                    last_pred_date = df_master["DATE"].max()
+                    if pd.notna(last_pred_date):
+                        last_pred_date = last_pred_date.date()
+                        if min_date <= last_pred_date < max_date:
+                            start_date = last_pred_date + timedelta(days=1)
+                        elif last_pred_date >= max_date:
+                            print("INFO: All dates already processed; nothing to do.")
+                            return [], None, max_date
+            except Exception:
+                pass
+    else:
+        start_date = datetime.strptime(start_str, "%d-%m-%Y").date()
+
+        if start_date <= min_date:
+            raise ValueError(f"Start date must be after {min_date}")
+        if start_date > max_date:
+            raise ValueError(f"Start date cannot exceed {max_date}")
 
     target_dates = []
     curr = start_date
@@ -107,7 +129,7 @@ def collect_predictions(target_dates, actual):
     return all_predictions
 
 
-def save_master_excel(all_predictions, roi_rows=None):
+def save_master_excel(all_predictions, slot_metrics, roi_rows=None):
     os.makedirs(os.path.dirname(MASTER_XLSX), exist_ok=True)
 
     rows = []
@@ -119,52 +141,105 @@ def save_master_excel(all_predictions, roi_rows=None):
         for idx in range(1, len(SCRIPTS) + 1):
             vals = scripts_dict.get(f"SCR{idx}", [])
             row[f"SCR{idx}"] = ", ".join(vals)
+        metrics = slot_metrics.get((d, slot), {})
+        row.update(metrics)
         rows.append(row)
 
     df_new = pd.DataFrame(rows)
 
+    roi_cols = [f"top_{n}_roi" for n in TOP_N_LIST]
+    desired_cols = (
+        ["DATE", "SLOT"]
+        + [f"SCR{idx}" for idx in range(1, len(SCRIPTS) + 1)]
+        + ["final"]
+        + roi_cols
+    )
+    df_new = df_new.reindex(columns=[c for c in desired_cols if c in df_new.columns])
+
+    if not os.path.exists(MASTER_XLSX):
+        with pd.ExcelWriter(MASTER_XLSX) as writer:
+            df_new.to_excel(writer, sheet_name="raw_predictions", index=False)
+            if roi_rows is not None:
+                pd.DataFrame(roi_rows).to_excel(writer, sheet_name="roi_summary", index=False)
+        return df_new
+
+    old = pd.read_excel(MASTER_XLSX, sheet_name="raw_predictions")
+
+    old["KEY"] = old["DATE"].astype(str) + "|" + old["SLOT"].astype(str)
+    df_new["KEY"] = df_new["DATE"].astype(str) + "|" + df_new["SLOT"].astype(str)
+
+    old = old[~old["KEY"].isin(df_new["KEY"])]
+    combined = pd.concat([old, df_new], ignore_index=True)
+    combined = combined.drop(columns=["KEY"])
+    combined = combined.sort_values(["DATE", "SLOT"]).reset_index(drop=True)
+
     with pd.ExcelWriter(MASTER_XLSX) as writer:
-        df_new.to_excel(writer, sheet_name="raw_predictions", index=False)
+        combined.to_excel(writer, sheet_name="raw_predictions", index=False)
         if roi_rows is not None:
             pd.DataFrame(roi_rows).to_excel(writer, sheet_name="roi_summary", index=False)
 
-    return df_new
+    return combined
 
 
 def calculate_roi(all_predictions, actual):
+    """
+    Returns:
+      roi_rows    – aggregate summary per Top-N
+      slot_metrics – dict[(date, slot)] = {
+           "final": "...",
+           "top_3_roi": ...,
+           "top_5_roi": ...,
+           ...
+       }
+    """
+
+    slot_metrics = {}
     total_stake = {n: 0 for n in TOP_N_LIST}
     total_return = {n: 0 for n in TOP_N_LIST}
 
-    for key, scripts_dict in all_predictions.items():
-        date, slot = key
+    for (date, slot), scripts_dict in all_predictions.items():
         if (date, slot) not in actual:
             continue
 
         votes = Counter()
         for nums in scripts_dict.values():
             for s in nums:
-                s2 = str(s).zfill(2)
-                votes[s2] += 1
+                votes[str(s).zfill(2)] += 1
 
         if not votes:
             continue
 
         actual_num = str(actual[(date, slot)]).zfill(2)
 
-        for n in TOP_N_LIST:
-            top_list = [num for num, _ in votes.most_common(n)]
-            if not top_list:
-                continue
-            total_stake[n] += len(top_list)
-            total_return[n] += 90 if (actual_num in top_list) else 0
+        ordered = [num for num, _ in votes.most_common()]
+        per_slot = {"final": ", ".join(ordered)}
 
-    rows = []
+        for n in TOP_N_LIST:
+            top_list = ordered[:n]
+            if not top_list:
+                stake = 0
+                ret = 0
+                roi_pct = 0.0
+            else:
+                stake = len(top_list)
+                hit = actual_num in top_list
+                ret = 90 if hit else 0
+                roi_pct = (ret - stake) / stake * 100.0
+
+            total_stake[n] += stake
+            total_return[n] += ret
+
+            per_slot[f"top_{n}_roi"] = roi_pct
+
+        slot_metrics[(date, slot)] = per_slot
+
+    roi_rows = []
     for n in TOP_N_LIST:
         stake = total_stake[n]
         ret = total_return[n]
         profit = ret - stake
         roi_pct = (profit / stake * 100) if stake else 0.0
-        rows.append({
+        roi_rows.append({
             "top_n": n,
             "total_stake": stake,
             "total_return": ret,
@@ -172,7 +247,7 @@ def calculate_roi(all_predictions, actual):
             "roi_pct": roi_pct,
         })
 
-    return rows
+    return roi_rows, slot_metrics
 
 
 def main():
@@ -187,11 +262,15 @@ def main():
     actual = build_actual_results(df_full)
     target_dates, start_date, max_date = prepare_dates(df_full)
 
+    if not target_dates:
+        print("INFO: Nothing to process.")
+        return
+
     all_predictions = collect_predictions(target_dates, actual)
 
-    roi_rows = calculate_roi(all_predictions, actual)
+    roi_rows, slot_metrics = calculate_roi(all_predictions, actual)
 
-    save_master_excel(all_predictions, roi_rows)
+    save_master_excel(all_predictions, slot_metrics, roi_rows)
     best_roi_row = max(roi_rows, key=lambda r: r["roi_pct"]) if roi_rows else None
     best_profit_row = max(roi_rows, key=lambda r: r["profit"]) if roi_rows else None
 
