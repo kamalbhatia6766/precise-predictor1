@@ -9,6 +9,10 @@ import json
 import hashlib
 from quant_excel_loader import load_results_excel
 
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
+
 # ========== AGGRESSIVE TENSORFLOW SUPPRESSION ==========
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress ALL TensorFlow messages
@@ -1340,13 +1344,16 @@ class UltimatePredictorPro:
             self.output_dir, f'ultimate_predictions_long_{timestamp}.xlsx'
         )
 
-        wide_df.to_excel(wide_file, index=False)
-        predictions_df.to_excel(detailed_file, index=False)
-        self._export_ultimate_long(predictions_df, ultimate_long_file)
-        
-        self.create_analysis_report(predictions_df, df, analysis_file)
-        self.save_pattern_analysis(pattern_file)
-        self.save_cross_script_analysis(cross_script_file)
+        if not is_backtest_mode():
+            wide_df.to_excel(wide_file, index=False)
+            predictions_df.to_excel(detailed_file, index=False)
+            self._export_ultimate_long(predictions_df, ultimate_long_file)
+
+            self.create_analysis_report(predictions_df, df, analysis_file)
+            self.save_pattern_analysis(pattern_file)
+            self.save_cross_script_analysis(cross_script_file)
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR6 file outputs.")
         
         # Print actual file paths for user confirmation
         print(f"📁 Organized folder: {self.output_dir}")

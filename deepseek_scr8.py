@@ -6,6 +6,10 @@ import warnings
 import os
 import glob
 import json
+
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
 import shutil
 from quant_excel_loader import load_results_excel
 warnings.filterwarnings('ignore')
@@ -575,12 +579,15 @@ class SCR10UltimatePredictor:
         detailed_path = os.path.join(self.predictions_dir, f'scr10_detailed_{timestamp}.xlsx')
         analysis_path = os.path.join(self.predictions_dir, f'scr10_analysis_{timestamp}.txt')
         diagnostic_path = os.path.join(self.predictions_dir, 'scr10_diagnostic.xlsx')
-        
-        wide_df.to_excel(predictions_path, index=False)
-        predictions_df.to_excel(detailed_path, index=False)
-        
-        # Create pattern analysis report
-        self.create_pattern_report(predictions_df, df, analysis_path)
+
+        if not is_backtest_mode():
+            wide_df.to_excel(predictions_path, index=False)
+            predictions_df.to_excel(detailed_path, index=False)
+
+            # Create pattern analysis report
+            self.create_pattern_report(predictions_df, df, analysis_path)
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR8 Excel outputs.")
         
         # Calculate relative paths for display
         rel_predictions = os.path.relpath(predictions_path, self.base_dir)

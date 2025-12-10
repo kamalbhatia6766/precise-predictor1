@@ -1,10 +1,14 @@
+import os
+import shutil
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import warnings
-import os
-import shutil
 from quant_excel_loader import load_results_excel
+
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
 
 
 def normalize_date_column(df: pd.DataFrame) -> pd.DataFrame:
@@ -378,33 +382,32 @@ def main():
         # Create wide format sheet
         wide_predictions = predictor.create_prediction_sheet(predictions, 'wide')
         
-        # Save results to root (for backward compatibility)
-        root_precise_path = 'precise_predictions.xlsx'
-        root_detailed_path = 'detailed_predictions.xlsx'
-        
-        wide_predictions.to_excel(root_precise_path, index=False)
-        predictions.to_excel(root_detailed_path, index=False)
-        
-        # Create organized folder structure
         base_dir = os.path.dirname(os.path.abspath(__file__))
         scr1_out_dir = os.path.join(base_dir, "predictions", "deepseek_scr1")
         os.makedirs(scr1_out_dir, exist_ok=True)
-        
-        # Create timestamped copies
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        scr1_precise_hist = os.path.join(scr1_out_dir, f"scr1_precise_predictions_{ts}.xlsx")
-        scr1_detailed_hist = os.path.join(scr1_out_dir, f"scr1_detailed_predictions_{ts}.xlsx")
-        
-        shutil.copy2(root_precise_path, scr1_precise_hist)
-        shutil.copy2(root_detailed_path, scr1_detailed_hist)
-        
-        print("✅ SCR1 baseline predictions saved.")
-        print("   Root files (used by SCR9):")
-        print("     - precise_predictions.xlsx")
-        print("     - detailed_predictions.xlsx")
-        print("   History copies:")
-        print(f"     - predictions\\deepseek_scr1\\scr1_precise_predictions_{ts}.xlsx")
-        print(f"     - predictions\\deepseek_scr1\\scr1_detailed_predictions_{ts}.xlsx")
+
+        if not is_backtest_mode():
+            latest_precise = os.path.join(scr1_out_dir, "scr1_predictions_latest.xlsx")
+            latest_detailed = os.path.join(scr1_out_dir, "scr1_predictions_latest_detailed.xlsx")
+            wide_predictions.to_excel(latest_precise, index=False)
+            predictions.to_excel(latest_detailed, index=False)
+
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            scr1_precise_hist = os.path.join(scr1_out_dir, f"scr1_precise_predictions_{ts}.xlsx")
+            scr1_detailed_hist = os.path.join(scr1_out_dir, f"scr1_detailed_predictions_{ts}.xlsx")
+
+            shutil.copy2(latest_precise, scr1_precise_hist)
+            shutil.copy2(latest_detailed, scr1_detailed_hist)
+
+            print("✅ SCR1 baseline predictions saved.")
+            print("   Latest files:")
+            print(f"     - {os.path.relpath(latest_precise, base_dir)}")
+            print(f"     - {os.path.relpath(latest_detailed, base_dir)}")
+            print("   History copies:")
+            print(f"     - {os.path.relpath(scr1_precise_hist, base_dir)}")
+            print(f"     - {os.path.relpath(scr1_detailed_hist, base_dir)}")
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR1 Excel outputs to reduce clutter.")
         
         # Display tomorrow's predictions
         if len(wide_predictions) > 0:

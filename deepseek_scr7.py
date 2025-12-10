@@ -6,6 +6,10 @@ import warnings
 import os
 import glob
 import json
+
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
 import shutil
 from quant_excel_loader import load_results_excel
 warnings.filterwarnings('ignore')
@@ -666,13 +670,16 @@ class AdvancedLearningPredictor:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         wide_path = os.path.join(self.predictions_dir, f'advanced_predictions_{timestamp}.xlsx')
         detailed_path = os.path.join(self.predictions_dir, f'advanced_detailed_{timestamp}.xlsx')
-        
-        wide_df.to_excel(wide_path, index=False)
-        predictions_df.to_excel(detailed_path, index=False)
-        
-        # Create analysis report
-        analysis_path = os.path.join(self.predictions_dir, f'advanced_analysis_{timestamp}.txt')
-        self.create_analysis_report(predictions_df, df, analysis_path)
+
+        if not is_backtest_mode():
+            wide_df.to_excel(wide_path, index=False)
+            predictions_df.to_excel(detailed_path, index=False)
+
+            # Create analysis report
+            analysis_path = os.path.join(self.predictions_dir, f'advanced_analysis_{timestamp}.txt')
+            self.create_analysis_report(predictions_df, df, analysis_path)
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR7 Excel outputs.")
         
         return wide_df
 

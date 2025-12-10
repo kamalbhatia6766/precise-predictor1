@@ -7,6 +7,10 @@ import os
 from pathlib import Path
 from quant_excel_loader import load_results_excel
 
+
+def is_backtest_mode() -> bool:
+    return os.getenv("PP_RUN_MODE", "").lower() == "backtest"
+
 warnings.filterwarnings('ignore')
 
 class AutoUpdatePredictor:
@@ -443,13 +447,14 @@ class AutoUpdatePredictor:
         pred_path = output_dir / f"scr5_predictions_{timestamp}.xlsx"
         detail_path = output_dir / f"scr5_detailed_{timestamp}.xlsx"
         report_path = output_dir / f"scr5_analysis_{timestamp}.txt"
-        
-        wide_df.to_excel(pred_path, index=False)
-        predictions_df.to_excel(detail_path, index=False)
-        
-        # Create analysis report
-        self.create_analysis_report(predictions_df, df, report_path)
-        
+
+        if not is_backtest_mode():
+            wide_df.to_excel(pred_path, index=False)
+            predictions_df.to_excel(detail_path, index=False)
+
+            # Create analysis report
+            self.create_analysis_report(predictions_df, df, report_path)
+
         return wide_df, pred_path, detail_path, report_path
 
     def create_analysis_report(self, predictions_df, df, filename):
@@ -580,11 +585,15 @@ def main():
             predictions, df, PRED_DIR, timestamp
         )
         
-        print("✅ Updated predictions generated successfully!")
-        print("💾 Files saved:")
-        print(f"   - {pred_path}")
-        print(f"   - {detail_path}")
-        print(f"   - {report_path}")
+        if not is_backtest_mode():
+            print("✅ Updated predictions generated successfully!")
+            print("💾 Files saved:")
+            print(f"   - {pred_path}")
+            print(f"   - {detail_path}")
+            if report_path:
+                print(f"   - {report_path}")
+        else:
+            print("ℹ️  Backtest mode detected: skipping SCR5 file outputs.")
         
         # Display predictions
         if len(wide_predictions) > 0:
