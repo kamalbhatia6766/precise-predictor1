@@ -22,11 +22,11 @@ class FinalPredictor:
         """Canonical data loader that delegates to quant_excel_loader"""
         try:
             df = load_results_excel(file_path)
-            print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+            print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
             return df
 
         except Exception as e:
-            print(f"❌ Error loading data via quant_excel_loader: {e}")
+            print(f"ERROR Error loading data via quant_excel_loader: {e}")
             raise
 
     def clean_number(self, x):
@@ -424,16 +424,16 @@ class FinalPredictor:
             f.write("- Statistical Forest Simulation\n\n")
             
             f.write("Key Features:\n")
-            f.write("• Probability calibration\n")
-            f.write("• Strategy reliability assessment\n")
-            f.write("• Intelligent range filtering\n")
-            f.write("• Multi-method ensemble\n\n")
+            f.write("- Probability calibration\n")
+            f.write("- Strategy reliability assessment\n")
+            f.write("- Intelligent range filtering\n")
+            f.write("- Multi-method ensemble\n\n")
         
         return report_path
 
 def main():
     print("=== FINAL OPTIMIZED PREDICTOR ===")
-    print("🎯 Advanced Ensemble with Probability Calibration")
+    print(" Advanced Ensemble with Probability Calibration")
     
     # Create SCR4-specific output directory
     BASE_DIR = Path(__file__).resolve().parent
@@ -441,7 +441,7 @@ def main():
     SCR4_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    print(f"🧹 SCR4: using predictions\\deepseek_scr4 for all outputs...")
+    print(f"CLEANUP SCR4: using predictions\\deepseek_scr4 for all outputs...")
     
     predictor = FinalPredictor()
     file_path = 'number prediction learn.xlsx'
@@ -450,16 +450,16 @@ def main():
     df = predictor.load_data(file_path)
     
     if df is not None and len(df) > 0:
-        print(f"📊 Total records: {len(df)}")
+        print(f"DATA Total records: {len(df)}")
         
         # Show monthly breakdown
         df['year_month'] = df['date'].dt.to_period('M')
         monthly_counts = df.groupby(['year_month', 'slot']).size().unstack(fill_value=0)
-        print("\n📅 MONTHLY BREAKDOWN:")
+        print("\nDATE MONTHLY BREAKDOWN:")
         print(monthly_counts)
         
         # Generate predictions
-        print("\n🎯 Generating final optimized predictions...")
+        print("\n Generating final optimized predictions...")
         predictions = predictor.generate_final_predictions(df, days=3, top_k=5)
         
         # Create output files in SCR4 directory
@@ -468,29 +468,29 @@ def main():
         )
         
         if not is_backtest_mode():
-            print("✅ Final predictions generated successfully!")
-            print("💾 Files saved:")
+            print("OK Final predictions generated successfully!")
+            print(" Files saved:")
             print(f"   - {pred_path}")
             print(f"   - {detail_path}")
             if report_path:
                 print(f"   - {report_path}")
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR4 file outputs.")
+            print("INFO  Backtest mode detected: skipping SCR4 file outputs.")
         
         # Display predictions (unchanged format for SCR9 parsing)
         if len(wide_predictions) > 0:
-            print("\n🎲 FINAL PREDICTIONS FOR TOMORROW:")
+            print("\n FINAL PREDICTIONS FOR TOMORROW:")
             tomorrow_pred = wide_predictions.iloc[0]
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in tomorrow_pred:
                     print(f"   {slot_name}: {tomorrow_pred[slot_name]}")
         
-        print("\n🔬 Methodology: 6-strategy ensemble with probability calibration")
-        print("   • Bayesian Probability • Gap Analysis • Pattern Mining")
-        print("   • Frequency Momentum • Markov Chains • Statistical Forest")
+        print("\n Methodology: 6-strategy ensemble with probability calibration")
+        print("   - Bayesian Probability - Gap Analysis - Pattern Mining")
+        print("   - Frequency Momentum - Markov Chains - Statistical Forest")
         
     else:
-        print("❌ Failed to load data")
+        print("ERROR Failed to load data")
 
 if __name__ == "__main__":
     main()

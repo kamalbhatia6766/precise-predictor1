@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime, timedelta
-from datetime import datetime as _dt
 import quant_paths
 
 def load_results_dataframe():
@@ -23,11 +22,11 @@ def load_results_dataframe():
         print(f"Found columns: {df_raw.columns.tolist()}")
         print(f"Raw shape: {df_raw.shape}")
     except Exception as e:
-        print(f"❌ Error loading real results: {e}")
+        print(f"ERROR: Error loading real results: {e}")
         return pd.DataFrame()
 
     if df_raw.empty:
-        print("❌ Real results file is empty")
+        print("ERROR: Real results file is empty")
         return pd.DataFrame()
 
     def _is_datetime_like(value):
@@ -52,10 +51,10 @@ def load_results_dataframe():
     header_is_data = _is_datetime_like(first_cell)
 
     if header_is_data:
-        print("ℹ️  Detected first row as data (no header row present)")
+        print("INFO: Detected first row as data (no header row present)")
         df = df_raw.iloc[:, :5].copy()
     else:
-        print("ℹ️  Detected header row; normalizing column names")
+        print("INFO: Detected header row; normalizing column names")
         inferred_columns = [str(col).strip().upper() for col in first_row]
         df = df_raw.iloc[1:, :5].copy()
         df.columns = inferred_columns
@@ -108,18 +107,18 @@ def load_results_dataframe():
 
     if invalid_date_values:
         sample_values = invalid_date_values[:5]
-        print(f"⚠️  Failed to parse {len(invalid_date_values)} DATE entries. Samples: {sample_values}")
+        print(f"WARNING: Failed to parse {len(invalid_date_values)} DATE entries. Samples: {sample_values}")
 
     df["DATE"] = pd.to_datetime(parsed_dates, errors="coerce")
     invalid_after_parse = df["DATE"].isna().sum()
 
     if invalid_after_parse:
-        print(f"⚠️  Dropping {invalid_after_parse} rows with unparseable DATE values")
+        print(f"WARNING: Dropping {invalid_after_parse} rows with unparseable DATE values")
         df = df.dropna(subset=["DATE"])
 
     # If still nothing valid, bail out gracefully
     if df.empty:
-        print("❌ No valid DATE values found after parsing; exiting gracefully")
+        print("ERROR: No valid DATE values found after parsing; exiting gracefully")
         return pd.DataFrame()
 
     # Drop obviously bogus historical dates (e.g. Excel serial 0 -> 1899-12-31)
@@ -127,29 +126,17 @@ def load_results_dataframe():
     bogus_mask = df["DATE"] < pd.Timestamp(min_valid_date)
     if bogus_mask.any():
         dropped_bogus = int(bogus_mask.sum())
-        print(f"⚠️  Dropping {dropped_bogus} rows with implausible DATE < {min_valid_date.date()}")
+        print(f"WARNING: Dropping {dropped_bogus} rows with implausible DATE < {min_valid_date.date()}")
         df = df.loc[~bogus_mask].copy()
 
     if df.empty:
-        print("❌ No valid DATE values left after DATE sanity filter; exiting gracefully")
+        print("ERROR: No valid DATE values left after DATE sanity filter; exiting gracefully")
         return pd.DataFrame()
-
-    # Optional cutoff for time-machine runs
-    cutoff_str = os.getenv("PREDICTOR_CUTOFF_DATE", "").strip()
-    if cutoff_str:
-        try:
-            cutoff_date = _dt.strptime(cutoff_str, "%Y-%m-%d").date()
-            df = df[df["DATE"].dt.date <= cutoff_date]
-            if df.empty:
-                print("⚠️  Cutoff date filter removed all rows; returning empty DataFrame")
-                return pd.DataFrame()
-        except Exception:
-            print(f"⚠️  Ignoring invalid PREDICTOR_CUTOFF_DATE value: '{cutoff_str}'")
 
     # Ensure slot columns exist and are numeric
     for slot in ["FRBD", "GZBD", "GALI", "DSWR"]:
         if slot not in df.columns:
-            print(f"⚠️  Slot column '{slot}' not found, creating with NaN values")
+            print(f"WARNING: Slot column '{slot}' not found, creating with NaN values")
             df[slot] = np.nan
         df.loc[:, slot] = pd.to_numeric(df[slot], errors="coerce")
 
@@ -161,13 +148,24 @@ def load_results_dataframe():
 
     unique_dates = df["DATE"].dt.date.dropna().unique()
     if len(unique_dates) == 0:
-        print("❌ No valid DATE values found after final DATE conversion")
+        print("ERROR: No valid DATE values found after final DATE conversion")
         return pd.DataFrame()
+
+    # Optional cutoff from environment for time-machine / backtest runs.
+    cutoff_str = os.getenv("PREDICTOR_CUTOFF_DATE", "").strip()
+    if cutoff_str:
+        try:
+            cutoff_date = datetime.strptime(cutoff_str, "%Y-%m-%d").date()
+            df = df[df["DATE"].dt.date <= cutoff_date]
+            if df.empty:
+                print(f"WARNING: No rows left after applying PREDICTOR_CUTOFF_DATE={cutoff_str}")
+        except Exception as e:
+            print(f"WARNING: Failed to apply PREDICTOR_CUTOFF_DATE={cutoff_str}: {e}")
 
     df = df.sort_values("DATE").reset_index(drop=True)
 
-    print(f"✅ Loaded results data: {total_rows} records with columns: {df.columns.tolist()}")
-    print(f"📅 DATE range: {df['DATE'].min().date()} to {df['DATE'].max().date()}")
+    print(f"INFO: Loaded results data: {total_rows} records with columns: {df.columns.tolist()}")
+    print(f"INFO: DATE range: {df['DATE'].min().date()} to {df['DATE'].max().date()}")
 
     return df
 
@@ -227,7 +225,7 @@ def build_prediction_plan(df):
     # Fallback if no valid date found
     if not latest_date:
         latest_date = today
-        print("⚠️  No valid result data found, using today as fallback")
+        print("WARNING: No valid result data found, using today as fallback")
     
     slot_status = get_slot_fill_status_for_date(df, latest_date)
     
@@ -270,7 +268,7 @@ def build_prediction_plan(df):
 
 def print_prediction_plan_summary(plan):
     """Print human-readable prediction plan summary"""
-    print("\n🎯 PREDICTION PLAN SUMMARY")
+    print("\nPREDICTION PLAN SUMMARY")
     print("=" * 40)
     print(f"Latest result date: {plan['latest_result_date']}")
     print(f"Plan mode: {plan['mode']}")
@@ -281,11 +279,11 @@ def print_prediction_plan_summary(plan):
         print("Same-day slots: None")
         
     print(f"Next prediction date: {plan['next_date']}")
-    
+
     if plan['slot_status']:
         print("Slot status:")
         for slot, filled in plan['slot_status'].items():
-            status = "✅ Filled" if filled else "❌ Missing"
+            status = "FILLED" if filled else "MISSING"
             print(f"  {slot}: {status}")
 
 # Utility function for date handling

@@ -43,7 +43,7 @@ def run_child_script(script_path: str) -> dict:
             continue
 
     if result.returncode != 0:
-        print(f"⚠️  Script {script_path} exited with code {result.returncode}")
+        print(f"WARNING: Script {script_path} exited with code {result.returncode}")
         if result.stderr:
             print(result.stderr)
 
@@ -107,7 +107,7 @@ def collect_predictions(target_dates, actual):
     return all_predictions
 
 
-def save_master_excel(all_predictions):
+def save_master_excel(all_predictions, roi_rows=None):
     os.makedirs(os.path.dirname(MASTER_XLSX), exist_ok=True)
 
     rows = []
@@ -123,28 +123,12 @@ def save_master_excel(all_predictions):
 
     df_new = pd.DataFrame(rows)
 
-    if not os.path.exists(MASTER_XLSX):
-        with pd.ExcelWriter(MASTER_XLSX) as writer:
-            df_new.to_excel(writer, sheet_name="raw_predictions", index=False)
-        return df_new
-
-    try:
-        df_old = pd.read_excel(MASTER_XLSX, sheet_name="raw_predictions")
-    except Exception:
-        df_old = pd.DataFrame()
-
-    df_old["KEY"] = df_old.get("DATE", "") + "|" + df_old.get("SLOT", "")
-    df_new["KEY"] = df_new["DATE"] + "|" + df_new["SLOT"]
-
-    df_old = df_old[~df_old["KEY"].isin(df_new["KEY"])] if not df_old.empty else pd.DataFrame()
-    combined = pd.concat([df_old, df_new], ignore_index=True)
-    combined = combined.drop(columns=["KEY"], errors="ignore")
-    combined = combined.sort_values(["DATE", "SLOT"]).reset_index(drop=True)
-
     with pd.ExcelWriter(MASTER_XLSX) as writer:
-        combined.to_excel(writer, sheet_name="raw_predictions", index=False)
+        df_new.to_excel(writer, sheet_name="raw_predictions", index=False)
+        if roi_rows is not None:
+            pd.DataFrame(roi_rows).to_excel(writer, sheet_name="roi_summary", index=False)
 
-    return combined
+    return df_new
 
 
 def calculate_roi(all_predictions, actual):
@@ -169,26 +153,26 @@ def calculate_roi(all_predictions, actual):
 
         for n in TOP_N_LIST:
             top_list = [num for num, _ in votes.most_common(n)]
-            stake = len(top_list)
-            hit = actual_num in top_list
-            total_stake[n] += stake
-            total_return[n] += 90 if hit else 0
+            if not top_list:
+                continue
+            total_stake[n] += len(top_list)
+            total_return[n] += 90 if (actual_num in top_list) else 0
 
-    summary_rows = []
+    rows = []
     for n in TOP_N_LIST:
         stake = total_stake[n]
         ret = total_return[n]
         profit = ret - stake
-        roi = (profit / stake * 100) if stake else 0.0
-        summary_rows.append({
+        roi_pct = (profit / stake * 100) if stake else 0.0
+        rows.append({
             "top_n": n,
             "total_stake": stake,
             "total_return": ret,
             "profit": profit,
-            "roi_pct": roi,
+            "roi_pct": roi_pct,
         })
 
-    return pd.DataFrame(summary_rows)
+    return rows
 
 
 def main():
@@ -197,7 +181,7 @@ def main():
 
     df_full = load_results_dataframe()
     if df_full.empty:
-        print("❌ No results data available.")
+        print("ERROR: No results data available.")
         return
 
     actual = build_actual_results(df_full)
@@ -205,34 +189,30 @@ def main():
 
     all_predictions = collect_predictions(target_dates, actual)
 
-    combined_raw = save_master_excel(all_predictions)
+    roi_rows = calculate_roi(all_predictions, actual)
 
-    roi_df = calculate_roi(all_predictions, actual)
+    save_master_excel(all_predictions, roi_rows)
+    best_roi_row = max(roi_rows, key=lambda r: r["roi_pct"]) if roi_rows else None
+    best_profit_row = max(roi_rows, key=lambda r: r["profit"]) if roi_rows else None
 
-    # Persist ROI summary
-    with pd.ExcelWriter(MASTER_XLSX, mode="a", if_sheet_exists="replace") as writer:
-        combined_raw.to_excel(writer, sheet_name="raw_predictions", index=False)
-        roi_df.to_excel(writer, sheet_name="roi_summary", index=False)
-
-    best_roi_row = roi_df.loc[roi_df["roi_pct"].idxmax()]
-    best_profit_row = roi_df.loc[roi_df["profit"].idxmax()]
-
-    print("\n=== ENSEMBLE ROI SUMMARY (SCR1–SCR9) ===")
+    print("\n=== ENSEMBLE ROI SUMMARY (SCR1-SCR9) ===")
     print(f"Window: {start_date} to {max_date} (all 4 slots)")
-    for _, row in roi_df.iterrows():
+    for row in roi_rows:
         print(
             f"Top{int(row['top_n']):<2}: stake={row['total_stake']}, "
             f"return={row['total_return']}, profit={row['profit']}, ROI={row['roi_pct']:.2f}%"
         )
 
-    print(
-        f"\nMax ROI   : Top{int(best_roi_row['top_n'])} "
-        f"(ROI={best_roi_row['roi_pct']:.2f}%, profit={best_roi_row['profit']}, stake={best_roi_row['total_stake']})"
-    )
-    print(
-        f"Max profit: Top{int(best_profit_row['top_n'])} "
-        f"(profit={best_profit_row['profit']}, ROI={best_profit_row['roi_pct']:.2f}%, stake={best_profit_row['total_stake']})"
-    )
+    if best_roi_row:
+        print(
+            f"\nBest ROI   : Top{int(best_roi_row['top_n'])} "
+            f"(ROI={best_roi_row['roi_pct']:.2f}%, profit={best_roi_row['profit']}, stake={best_roi_row['total_stake']})"
+        )
+    if best_profit_row:
+        print(
+            f"Best profit: Top{int(best_profit_row['top_n'])} "
+            f"(profit={best_profit_row['profit']}, ROI={best_profit_row['roi_pct']:.2f}%, stake={best_profit_row['total_stake']})"
+        )
 
 
 if __name__ == "__main__":

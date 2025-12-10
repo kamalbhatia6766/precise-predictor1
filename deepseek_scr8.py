@@ -153,9 +153,9 @@ class SCR10UltimatePredictor:
         try:
             df = load_results_excel(file_path)
             if df is None or len(df) == 0:
-                print("❌ SCR8: No valid data from quant_excel_loader")
+                print("ERROR SCR8: No valid data from quant_excel_loader")
                 return None
-            print(f"✅ SCR8: Loaded {len(df)} records via quant_excel_loader")
+            print(f"OK SCR8: Loaded {len(df)} records via quant_excel_loader")
             return df
         except Exception as e:
             print(f"Error loading data: {e}")
@@ -164,7 +164,7 @@ class SCR10UltimatePredictor:
     def update_pattern_packs(self, df):
         """Auto-update pattern packs with latest data"""
         # This can be expanded to automatically recalculate HOT/COLD patterns
-        print("🔄 Pattern packs updated with latest data")
+        print("LOOP Pattern packs updated with latest data")
         # For now using static patterns, but can be made dynamic
 
     def clean_number(self, x):
@@ -297,10 +297,10 @@ class SCR10UltimatePredictor:
                     # Process the data and add to online_predictions
                     pass
                 except Exception as e:
-                    print(f"⚠️ Failed to fetch from {source_name}: {e}")
+                    print(f"WARNING Failed to fetch from {source_name}: {e}")
             
         except Exception as e:
-            print(f"⚠️ Online predictions skipped: {e}")
+            print(f"WARNING Online predictions skipped: {e}")
         
         return online_predictions
 
@@ -532,7 +532,7 @@ class SCR10UltimatePredictor:
 
     def generate_predictions(self, df, days=3):
         """Generate ultimate predictions"""
-        print("🚀 Running SCR10 Ultimate Engine...")
+        print("FAST Running SCR10 Ultimate Engine...")
         ultimate_pred = self.advanced_prediction_engine(df, days)
         
         # Convert to DataFrame
@@ -587,7 +587,7 @@ class SCR10UltimatePredictor:
             # Create pattern analysis report
             self.create_pattern_report(predictions_df, df, analysis_path)
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR8 Excel outputs.")
+            print("INFO  Backtest mode detected: skipping SCR8 Excel outputs.")
         
         # Calculate relative paths for display
         rel_predictions = os.path.relpath(predictions_path, self.base_dir)
@@ -596,7 +596,7 @@ class SCR10UltimatePredictor:
         rel_diagnostic = os.path.relpath(diagnostic_path, self.base_dir)
         rel_performance = os.path.relpath(self.performance_log, self.base_dir)
         
-        print("\n✅ Files saved:")
+        print("\nOK Files saved:")
         print(f"   - {rel_predictions}")
         print(f"   - {rel_detailed}")
         print(f"   - {rel_diagnostic}")
@@ -612,18 +612,18 @@ class SCR10UltimatePredictor:
             f.write("=" * 60 + "\n\n")
             
             f.write("PATTERN PACKS USED:\n")
-            f.write(f"• Slot HOT packs: {self.SLOT_HOT}\n")
-            f.write(f"• Global multi-slot HOT: {self.GLOBAL_MULTI_SLOT_HOT}\n")
-            f.write(f"• Digit bias patterns: {self.DIGIT_BIAS}\n\n")
+            f.write(f"- Slot HOT packs: {self.SLOT_HOT}\n")
+            f.write(f"- Global multi-slot HOT: {self.GLOBAL_MULTI_SLOT_HOT}\n")
+            f.write(f"- Digit bias patterns: {self.DIGIT_BIAS}\n\n")
             
             f.write("ADVANCED FEATURES:\n")
-            f.write("• Pattern-based scoring engine\n")
-            f.write("• HOT/COLD number weighting\n")
-            f.write("• Digit pattern bias integration\n")
-            f.write("• Cross-slot opposite analysis\n")
-            f.write("• Online source integration ready\n")
-            f.write("• Range diversity enforcement\n")
-            f.write("• Smart top-k selection\n\n")
+            f.write("- Pattern-based scoring engine\n")
+            f.write("- HOT/COLD number weighting\n")
+            f.write("- Digit pattern bias integration\n")
+            f.write("- Cross-slot opposite analysis\n")
+            f.write("- Online source integration ready\n")
+            f.write("- Range diversity enforcement\n")
+            f.write("- Smart top-k selection\n\n")
             
             # Add predictions summary
             if not predictions_df.empty:
@@ -640,10 +640,10 @@ class SCR10UltimatePredictor:
 
 def main():
     organize_old_scr10_files()
-    print("🧹 Organizing SCR10 files into structured folders...")
+    print("CLEANUP Organizing SCR10 files into structured folders...")
     
     print("=== SCR10 ULTIMATE PREDICTOR ===")
-    print("🎯 Pattern Packs + Online Integration + Smart Scoring")
+    print(" Pattern Packs + Online Integration + Smart Scoring")
     
     predictor = SCR10UltimatePredictor()
     file_path = 'number prediction learn.xlsx'
@@ -652,11 +652,11 @@ def main():
     df = predictor.load_data(file_path)
     
     if df is not None and len(df) > 0:
-        print(f"📊 Historical data: {len(df)} records")
-        print(f"📅 Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
+        print(f"DATA Historical data: {len(df)} records")
+        print(f"DATE Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
         
         # Generate predictions
-        print("\n🎯 Generating SCR10 ultimate predictions...")
+        print("\n Generating SCR10 ultimate predictions...")
         predictions = predictor.generate_predictions(df, days=3)
         
         # Create output
@@ -665,7 +665,7 @@ def main():
         # Display predictions
         if len(wide_predictions) > 0:
             first_date = wide_predictions['date'].iloc[0]
-            print(f"\n🎲 SCR10 PREDICTIONS FOR {first_date}:")
+            print(f"\n SCR10 PREDICTIONS FOR {first_date}:")
             
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in wide_predictions.columns:
@@ -673,7 +673,7 @@ def main():
                     top_k = wide_predictions[wide_predictions['date'] == first_date][f'{slot_name}_top_k'].iloc[0]
                     print(f"   {slot_name} (Top-{top_k}): {numbers}")
             
-            print(f"\n🔄 PATTERN ANALYSIS:")
+            print(f"\nLOOP PATTERN ANALYSIS:")
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in wide_predictions.columns:
                     numbers_str = wide_predictions[wide_predictions['date'] == first_date][slot_name].iloc[0]
@@ -685,17 +685,17 @@ def main():
                     
                     print(f"   {slot_name}: HOT={hot_matches}, GLOBAL={global_matches}")
         
-        print("\n🔬 SCR10 METHODOLOGY:")
-        print("   • Pattern packs integration (HOT/COLD numbers)")
-        print("   • Digit bias analysis (tens/ones/sums)")
-        print("   • Global multi-slot HOT numbers")
-        print("   • Cross-slot opposite pattern detection")
-        print("   • Online source integration ready")
-        print("   • Range diversity enforcement")
-        print("   • Enhanced diagnostic scoring")
+        print("\n SCR10 METHODOLOGY:")
+        print("   - Pattern packs integration (HOT/COLD numbers)")
+        print("   - Digit bias analysis (tens/ones/sums)")
+        print("   - Global multi-slot HOT numbers")
+        print("   - Cross-slot opposite pattern detection")
+        print("   - Online source integration ready")
+        print("   - Range diversity enforcement")
+        print("   - Enhanced diagnostic scoring")
         
     else:
-        print("❌ Failed to load data")
+        print("ERROR Failed to load data")
 
 if __name__ == "__main__":
     main()

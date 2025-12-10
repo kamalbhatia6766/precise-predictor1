@@ -35,7 +35,7 @@ class AdvancedLearningPredictor:
         
     def organize_legacy_files(self):
         """Move old scr7 outputs from root to structured folders"""
-        print("🧹 Organizing SCR7 files into structured folders...")
+        print("CLEANUP Organizing SCR7 files into structured folders...")
         
         # Patterns for scr7 files
         patterns = [
@@ -52,9 +52,9 @@ class AdvancedLearningPredictor:
                 try:
                     if not os.path.exists(dest_path):
                         shutil.move(file_path, dest_path)
-                        print(f"   📂 Moved: {filename} → {self.predictions_dir}")
+                        print(f"    Moved: {filename} -> {self.predictions_dir}")
                 except Exception as e:
-                    print(f"   ⚠️  Could not move {filename}: {e}")
+                    print(f"   WARNING  Could not move {filename}: {e}")
         
         # Move prediction_diagnostic.xlsx
         diagnostic_src = os.path.join(self.base_dir, "prediction_diagnostic.xlsx")
@@ -62,9 +62,9 @@ class AdvancedLearningPredictor:
         if os.path.exists(diagnostic_src) and not os.path.exists(diagnostic_dest):
             try:
                 shutil.move(diagnostic_src, diagnostic_dest)
-                print(f"   📂 Moved: prediction_diagnostic.xlsx → {self.predictions_dir}")
+                print(f"    Moved: prediction_diagnostic.xlsx -> {self.predictions_dir}")
             except Exception as e:
-                print(f"   ⚠️  Could not move prediction_diagnostic.xlsx: {e}")
+                print(f"   WARNING  Could not move prediction_diagnostic.xlsx: {e}")
         
         # Move advanced_performance.csv
         perf_src = os.path.join(self.base_dir, "advanced_performance.csv")
@@ -77,15 +77,15 @@ class AdvancedLearningPredictor:
                 if src_size > dest_size:
                     try:
                         shutil.move(perf_src, perf_dest)
-                        print(f"   📂 Moved: advanced_performance.csv → {self.performance_dir}")
+                        print(f"    Moved: advanced_performance.csv -> {self.performance_dir}")
                     except Exception as e:
-                        print(f"   ⚠️  Could not move advanced_performance.csv: {e}")
+                        print(f"   WARNING  Could not move advanced_performance.csv: {e}")
             else:
                 try:
                     shutil.move(perf_src, perf_dest)
-                    print(f"   📂 Moved: advanced_performance.csv → {self.performance_dir}")
+                    print(f"    Moved: advanced_performance.csv -> {self.performance_dir}")
                 except Exception as e:
-                    print(f"   ⚠️  Could not move advanced_performance.csv: {e}")
+                    print(f"   WARNING  Could not move advanced_performance.csv: {e}")
         
     def initialize_system(self):
         """Initialize system with proper performance tracking"""
@@ -154,11 +154,11 @@ class AdvancedLearningPredictor:
         """Canonical data loader that delegates to quant_excel_loader"""
         try:
             df = load_results_excel(file_path)
-            print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+            print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
             return df
 
         except Exception as e:
-            print(f"❌ Error loading data via quant_excel_loader: {e}")
+            print(f"ERROR Error loading data via quant_excel_loader: {e}")
             raise
 
     def clean_number(self, x):
@@ -184,12 +184,12 @@ class AdvancedLearningPredictor:
 
     def run_evaluation_mode(self, df, evaluation_date):
         """Run evaluation mode to update performance logs"""
-        print(f"🔍 Running evaluation for {evaluation_date}")
+        print(f"SEARCH Running evaluation for {evaluation_date}")
         
         # Get actual results for evaluation date
         evaluation_data = df[df['date'] == pd.to_datetime(evaluation_date)]
         if evaluation_data.empty:
-            print(f"❌ No data found for {evaluation_date}")
+            print(f"ERROR No data found for {evaluation_date}")
             return
         
         # Load previous predictions for this date
@@ -240,7 +240,7 @@ class AdvancedLearningPredictor:
                 updated_df = perf_df
             
             updated_df.to_csv(self.performance_log, index=False)
-            print(f"✅ Updated performance log with {len(performance_rows)} records")
+            print(f"OK Updated performance log with {len(performance_rows)} records")
             
             # Update model weights based on new performance data
             self.update_model_weights()
@@ -625,7 +625,7 @@ class AdvancedLearningPredictor:
         if evaluation_date:
             self.run_evaluation_mode(df, evaluation_date)
         
-        print("🔍 Running advanced prediction engine...")
+        print("SEARCH Running advanced prediction engine...")
         advanced_pred = self.advanced_prediction_engine(df, days)
         
         # Convert to DataFrame format
@@ -679,7 +679,7 @@ class AdvancedLearningPredictor:
             analysis_path = os.path.join(self.predictions_dir, f'advanced_analysis_{timestamp}.txt')
             self.create_analysis_report(predictions_df, df, analysis_path)
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR7 Excel outputs.")
+            print("INFO  Backtest mode detected: skipping SCR7 Excel outputs.")
         
         return wide_df
 
@@ -694,12 +694,12 @@ class AdvancedLearningPredictor:
             f.write(f"Data Range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}\n\n")
             
             f.write("ADVANCED FEATURES:\n")
-            f.write("• Model-based voting with rank weights\n")
-            f.write("• Cross-slot correlation learning\n")
-            f.write("• Opposite number pattern analysis\n")
-            f.write("• EV-based dynamic top-k selection\n")
-            f.write("• Performance log auto-update\n")
-            f.write("• Diagnostic score breakdown\n\n")
+            f.write("- Model-based voting with rank weights\n")
+            f.write("- Cross-slot correlation learning\n")
+            f.write("- Opposite number pattern analysis\n")
+            f.write("- EV-based dynamic top-k selection\n")
+            f.write("- Performance log auto-update\n")
+            f.write("- Diagnostic score breakdown\n\n")
             
             # Add model performance summary
             f.write("MODEL PERFORMANCE SUMMARY:\n")
@@ -708,7 +708,7 @@ class AdvancedLearningPredictor:
 
 def main():
     print("=== ADVANCED LEARNING PREDICTOR ===")
-    print("🎯 Model-Based Voting + Performance Tracking + EV Optimization")
+    print(" Model-Based Voting + Performance Tracking + EV Optimization")
     
     predictor = AdvancedLearningPredictor()
     file_path = 'number prediction learn.xlsx'
@@ -720,8 +720,8 @@ def main():
         # Add slot names for analysis
         df['slot_name'] = df['slot'].map(predictor.slot_names)
         
-        print(f"📊 Historical data: {len(df)} records")
-        print(f"📅 Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
+        print(f"DATA Historical data: {len(df)} records")
+        print(f"DATE Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
         
         # Check if we want to run evaluation mode
         import sys
@@ -731,14 +731,14 @@ def main():
             return
         
         # Generate predictions
-        print("\n🎯 Generating advanced predictions...")
+        print("\n Generating advanced predictions...")
         predictions = predictor.generate_predictions(df, days=3)
         
         # Create output
         wide_predictions = predictor.create_output(predictions, df)
         
-        print("✅ Advanced predictions generated successfully!")
-        print("💾 Files saved:")
+        print("OK Advanced predictions generated successfully!")
+        print(" Files saved:")
         print(f"   - {predictor.predictions_dir}\\advanced_predictions_YYYYMMDD_HHMMSS.xlsx")
         print(f"   - {predictor.predictions_dir}\\advanced_detailed_YYYYMMDD_HHMMSS.xlsx")
         print(f"   - {predictor.predictions_dir}\\prediction_diagnostic.xlsx (score breakdown)")
@@ -748,7 +748,7 @@ def main():
         # Display predictions
         if len(wide_predictions) > 0:
             first_date = wide_predictions['date'].iloc[0]
-            print(f"\n🎲 ADVANCED PREDICTIONS FOR {first_date}:")
+            print(f"\n ADVANCED PREDICTIONS FOR {first_date}:")
             
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in wide_predictions.columns:
@@ -756,7 +756,7 @@ def main():
                     top_k = wide_predictions[wide_predictions['date'] == first_date][f'{slot_name}_top_k'].iloc[0]
                     print(f"   {slot_name} (Top-{top_k}): {numbers}")
             
-            print(f"\n🔄 OPPOSITE NUMBERS ANALYSIS:")
+            print(f"\nLOOP OPPOSITE NUMBERS ANALYSIS:")
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in wide_predictions.columns:
                     numbers_str = wide_predictions[wide_predictions['date'] == first_date][slot_name].iloc[0]
@@ -764,20 +764,20 @@ def main():
                     opposites = [predictor.get_opposite(n) for n in numbers[:3]]
                     print(f"   {slot_name} Opposites: {', '.join([f'{n:02d}' for n in opposites])}")
         
-        print("\n🔬 ADVANCED METHODOLOGY:")
-        print("   • Model-based voting with performance weights")
-        print("   • Rank-based score decay (rank1 > rank2 > ...)")
-        print("   • Cross-slot correlation learning")
-        print("   • Opposite number pattern analysis")
-        print("   • EV-based dynamic top-k (5/10/15)")
-        print("   • Performance log auto-update")
-        print("   • Diagnostic score breakdown")
+        print("\n ADVANCED METHODOLOGY:")
+        print("   - Model-based voting with performance weights")
+        print("   - Rank-based score decay (rank1 > rank2 > ...)")
+        print("   - Cross-slot correlation learning")
+        print("   - Opposite number pattern analysis")
+        print("   - EV-based dynamic top-k (5/10/15)")
+        print("   - Performance log auto-update")
+        print("   - Diagnostic score breakdown")
         
-        print("\n💡 Usage for evaluation:")
+        print("\nTIP Usage for evaluation:")
         print("   python deepseek_scr7.py evaluate 2025-11-14")
         
     else:
-        print("❌ Failed to load data")
+        print("ERROR Failed to load data")
 
 if __name__ == "__main__":
     main()

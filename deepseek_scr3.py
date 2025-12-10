@@ -22,11 +22,11 @@ class HybridPredictor:
         """Canonical data loader that delegates to quant_excel_loader"""
         try:
             df = load_results_excel(file_path)
-            print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+            print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
             return df
 
         except Exception as e:
-            print(f"❌ Error loading data via quant_excel_loader: {e}")
+            print(f"ERROR Error loading data via quant_excel_loader: {e}")
             raise
     
     def clean_number(self, x):
@@ -289,7 +289,7 @@ class HybridPredictor:
 
 def main():
     print("=== HYBRID NUMBER PREDICTOR ===")
-    print("🎯 Combining Best of Both Approaches")
+    print(" Combining Best of Both Approaches")
     
     predictor = HybridPredictor()
     file_path = 'number prediction learn.xlsx'
@@ -298,39 +298,39 @@ def main():
     df = predictor.load_data(file_path)
     
     if df is not None and len(df) > 0:
-        print(f"✅ Data loaded: {len(df)} records")
-        print(f"📅 Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
+        print(f"OK Data loaded: {len(df)} records")
+        print(f"DATE Date range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
         
         # Show data summary
-        print("\n📊 Data Summary:")
+        print("\nDATA Data Summary:")
         for slot in [1, 2, 3, 4]:
             slot_data = df[df['slot'] == slot]
             print(f"  {predictor.slot_names[slot]}: {len(slot_data)} records")
         
         # Generate predictions
-        print("\n🎯 Generating hybrid predictions...")
+        print("\n Generating hybrid predictions...")
         predictions = predictor.generate_hybrid_predictions(df, days=3, top_k=5)
         
         # Create output files
         wide_predictions, pred_path, detail_path = predictor.create_output_files(predictions)
         
-        print("✅ Hybrid predictions generated successfully!")
-        print("💾 Files saved:")
+        print("OK Hybrid predictions generated successfully!")
+        print(" Files saved:")
         print(f"   - {pred_path}")
         print(f"   - {detail_path}")
         
         # Display tomorrow's predictions
         if len(wide_predictions) > 0:
-            print("\n🎲 HYBRID PREDICTIONS FOR TOMORROW:")
+            print("\n HYBRID PREDICTIONS FOR TOMORROW:")
             tomorrow_pred = wide_predictions.iloc[0]
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in tomorrow_pred:
                     print(f"   {slot_name}: {tomorrow_pred[slot_name]}")
         
-        print("\n🔍 Strategy: Combined frequency, gap analysis, patterns, Markov chains, and hot/cold balance")
+        print("\nSEARCH Strategy: Combined frequency, gap analysis, patterns, Markov chains, and hot/cold balance")
         
     else:
-        print("❌ Failed to load data")
+        print("ERROR Failed to load data")
 
 if __name__ == "__main__":
     main()

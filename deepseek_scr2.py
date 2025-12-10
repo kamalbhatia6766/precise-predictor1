@@ -33,7 +33,7 @@ def normalize_date_column(df: pd.DataFrame) -> pd.DataFrame:
         # Create / overwrite a canonical lowercase 'date' column as datetime
         df['date'] = pd.to_datetime(df[date_col], errors='coerce')
     else:
-        # No date column at all – leave as is
+        # No date column at all - leave as is
         pass
 
     return df
@@ -108,10 +108,10 @@ class UltimateNumberPredictor:
         """
         try:
             df = load_results_excel(file_path)
-            print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+            print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
             return df
         except Exception as e:
-            print(f"❌ Error loading data via quant_excel_loader: {e}")
+            print(f"ERROR Error loading data via quant_excel_loader: {e}")
             raise
     
     def clean_number(self, x):
@@ -292,7 +292,7 @@ class UltimateNumberPredictor:
         """Combine multiple analysis methods for scoring"""
         df_long = self._ensure_long_format(df)
 
-        # slot yahan numeric id (1–4) maana jayega.
+        # slot yahan numeric id (1-4) maana jayega.
         # Agar kabhi future mein slot name aa jaye (e.g. "FRBD"), to usko id mein map kar do.
         if isinstance(slot, int):
             slot_id = slot
@@ -467,7 +467,7 @@ class UltimateNumberPredictor:
 
     def generate_bet_plan(self, predictions_df):
         """Generate bet plan with stake allocation"""
-        print("\n💰 GENERATING BET PLAN...")
+        print("\nCASH GENERATING BET PLAN...")
 
         bet_data = []
         unique_dates = sorted(predictions_df['date'].unique())
@@ -533,10 +533,10 @@ def load_data_alternative(file_path):
     """
     try:
         df = load_results_excel(file_path)
-        print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+        print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
         return df
     except Exception as e:
-        print(f"❌ Error loading data via quant_excel_loader: {e}")
+        print(f"ERROR Error loading data via quant_excel_loader: {e}")
         raise
 
 # Enhanced analysis
@@ -545,12 +545,12 @@ def enhanced_analysis(predictor, df):
     print("\n=== ENHANCED DATA ANALYSIS ===")
     
     # Date range analysis
-    print(f"\n📅 DATE RANGE: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
+    print(f"\nDATE DATE RANGE: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
     
     # Month-wise breakdown
     df['year_month'] = df['date'].dt.to_period('M')
     monthly_counts = df.groupby(['year_month', 'slot']).size().unstack(fill_value=0)
-    print("\n📊 MONTHLY RECORD COUNTS:")
+    print("\nDATA MONTHLY RECORD COUNTS:")
     print(monthly_counts)
     
     # Advanced slot analysis
@@ -561,7 +561,7 @@ def enhanced_analysis(predictor, df):
         if len(numbers) < 10:
             continue
             
-        print(f"\n🎯 ADVANCED ANALYSIS - {predictor.slot_names[slot]}:")
+        print(f"\n ADVANCED ANALYSIS - {predictor.slot_names[slot]}:")
         
         # Range distribution
         range_dist = predictor.range_distribution(numbers)
@@ -610,10 +610,10 @@ def organize_old_scr2_files():
 # Main execution
 def main():
     organize_old_scr2_files()
-    print("🧹 SCR2: using predictions\\deepseek_scr2 for all outputs...")
+    print("CLEANUP SCR2: using predictions\\deepseek_scr2 for all outputs...")
     
     print("=== ULTIMATE NUMBER PREDICTOR ===")
-    print("🚀 Using Advanced Pattern Recognition + Ensemble Methods")
+    print("FAST Using Advanced Pattern Recognition + Ensemble Methods")
     
     predictor = UltimateNumberPredictor()
     file_path = 'number prediction learn.xlsx'
@@ -626,9 +626,9 @@ def main():
 
     if df is not None and len(df) > 0:
         df = normalize_date_column(df)
-        print("✅ Data loaded successfully!")
+        print("OK Data loaded successfully!")
         df_long = predictor._ensure_long_format(df)
-        print(f"📊 Total records: {len(df_long)}")
+        print(f"DATA Total records: {len(df_long)}")
 
         # Keep analysis and modeling consistent by using long-format data
         
@@ -636,10 +636,10 @@ def main():
         try:
             enhanced_analysis(predictor, df_long)
         except Exception as e:
-            print(f"⚠️  Enhanced analysis skipped: {e}")
+            print(f"WARNING  Enhanced analysis skipped: {e}")
 
         # Generate predictions
-        print("\n🎯 Generating advanced predictions...")
+        print("\n Generating advanced predictions...")
         predictions = predictor.generate_predictions(df_long, days=3, top_k=5)
         
         # Generate bet plan
@@ -659,13 +659,13 @@ def main():
             predictions.to_excel(detailed_path, index=False)
             bet_plan.to_excel(bet_plan_path, index=False)
 
-            print("✅ SCR2 predictions generated successfully!")
-            print("💾 Files saved:")
+            print("OK SCR2 predictions generated successfully!")
+            print(" Files saved:")
             print(f"   - {os.path.relpath(predictions_path, predictor.base_dir)}")
             print(f"   - {os.path.relpath(detailed_path, predictor.base_dir)}")
             print(f"   - {os.path.relpath(bet_plan_path, predictor.base_dir)}")
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR2 Excel outputs.")
+            print("INFO  Backtest mode detected: skipping SCR2 Excel outputs.")
         
         # Display predictions
         if len(wide_predictions) > 0:
@@ -675,9 +675,9 @@ def main():
             today = datetime.now().date()
 
             if first_date == today + timedelta(days=1):
-                print(f"\n🎲 TOP PREDICTIONS FOR TOMORROW ({first_date.strftime('%Y-%m-%d')}):")
+                print(f"\n TOP PREDICTIONS FOR TOMORROW ({first_date.strftime('%Y-%m-%d')}):")
             else:
-                print(f"\n🎲 PREDICTIONS FOR NEXT UNKNOWN RESULT DATE: {first_date.strftime('%Y-%m-%d')}")
+                print(f"\n PREDICTIONS FOR NEXT UNKNOWN RESULT DATE: {first_date.strftime('%Y-%m-%d')}")
 
             first_date_str = first_date.strftime('%Y-%m-%d')
             tomorrow_pred = wide_predictions[wide_predictions['date'] == first_date_str].iloc[0]
@@ -686,7 +686,7 @@ def main():
                     print(f"   {slot_name}: {tomorrow_pred[slot_name]}")
 
             # Display ANDAR/BAHAR
-            print("\n🎯 ANDAR/BAHAR DIGITS:")
+            print("\n ANDAR/BAHAR DIGITS:")
             tomorrow_bet = bet_plan[bet_plan['date'] == first_date_str]
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 slot_bet = tomorrow_bet[tomorrow_bet['slot_name'] == slot_name]
@@ -696,7 +696,7 @@ def main():
                     print(f"   {slot_name}: ANDAR={andar}, BAHAR={bahar}")
         
     else:
-        print("❌ Failed to load data.")
+        print("ERROR Failed to load data.")
 
 if __name__ == "__main__":
     main()

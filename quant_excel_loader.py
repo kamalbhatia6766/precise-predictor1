@@ -22,19 +22,18 @@ SLOT_MAP = {
 
 
 def _call_loader_with_optional_path(file_path: Path):
-    """Call ``load_results_dataframe`` while tolerating legacy signatures.
+    """Call load_results_dataframe while tolerating legacy signatures.
 
-    Some historical versions of ``load_results_dataframe`` didn't accept a
-    file path argument. In that scenario, fall back to calling it without
-    parameters so older environments keep working.
+    In the current environment, load_results_dataframe() does not accept a path
+    argument and always uses the default results file path from quant_paths.
     """
-
+    # Ignore file_path; just delegate to the central loader
     try:
-        return load_results_dataframe(file_path)
+        return load_results_dataframe()
     except TypeError as exc:
-        # Gracefully handle legacy signature ``load_results_dataframe()``
+        # Defensive fallback if an older signature is encountered
         if "takes 0 positional arguments" in str(exc):
-            print("ℹ️  load_results_dataframe does not accept a file path; using default path")
+            print("INFO: load_results_dataframe does not accept a file path; using default path")
             return load_results_dataframe()
         raise
 
@@ -51,7 +50,7 @@ def load_results_excel(file_path="number prediction learn.xlsx"):
     """
     df_raw = _call_loader_with_optional_path(Path(file_path))
     if df_raw.empty:
-        print("❌ No data found in results file")
+        print("ERROR: No data found in results file")
         return pd.DataFrame(columns=["date", "slot", "number"])
 
     # Normalize column names so we can flexibly accept both wide and already
@@ -86,7 +85,7 @@ def load_results_excel(file_path="number prediction learn.xlsx"):
 
     long_df = long_df.dropna(subset=["date", "slot", "number"])
     if long_df.empty:
-        print("❌ No valid entries after cleaning")
+        print("ERROR: No valid entries after cleaning")
         return pd.DataFrame(columns=["date", "slot", "number"])
 
     long_df["slot"] = long_df["slot"].astype(int)
@@ -95,6 +94,6 @@ def load_results_excel(file_path="number prediction learn.xlsx"):
     long_df = long_df[["date", "slot", "number"]].sort_values(["date", "slot"]).reset_index(drop=True)
 
     if long_df.empty:
-        print("❌ No valid numeric entries after cleaning")
+        print("ERROR: No valid numeric entries after cleaning")
 
     return long_df
