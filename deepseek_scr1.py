@@ -31,7 +31,7 @@ def normalize_date_column(df: pd.DataFrame) -> pd.DataFrame:
         # Create / overwrite a canonical lowercase 'date' column as datetime
         df['date'] = pd.to_datetime(df[date_col], errors='coerce')
     else:
-        # No date column at all – leave as is
+        # No date column at all - leave as is
         pass
 
     return df
@@ -98,10 +98,10 @@ class PreciseNumberPredictor:
         """
         try:
             df = load_results_excel(file_path)
-            print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+            print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
             return df
         except Exception as e:
-            print(f"❌ Error loading data via quant_excel_loader: {e}")
+            print(f"ERROR Error loading data via quant_excel_loader: {e}")
             raise
     
     def clean_number(self, x):
@@ -272,10 +272,10 @@ def load_data_alternative(file_path):
     """
     try:
         df = load_results_excel(file_path)
-        print(f"✅ Data loaded successfully via quant_excel_loader: {len(df)} records")
+        print(f"OK Data loaded successfully via quant_excel_loader: {len(df)} records")
         return df
     except Exception as e:
-        print(f"❌ Error loading data via quant_excel_loader: {e}")
+        print(f"ERROR Error loading data via quant_excel_loader: {e}")
         raise
 
 # Enhanced Features (Optional - Uncomment if you want to use these)
@@ -358,12 +358,12 @@ def main():
     if df is not None and len(df) > 0:
         df = normalize_date_column(df)
         df_long = predictor.ensure_long_format(df)
-        print("✅ Data loaded successfully!")
-        print(f"📊 Total records: {len(df_long)}")
-        print(f"📅 Date range: {df_long['date'].min().strftime('%Y-%m-%d')} to {df_long['date'].max().strftime('%Y-%m-%d')}")
+        print("OK Data loaded successfully!")
+        print(f"DATA Total records: {len(df_long)}")
+        print(f"DATE Date range: {df_long['date'].min().strftime('%Y-%m-%d')} to {df_long['date'].max().strftime('%Y-%m-%d')}")
         
         # Show data summary by slot
-        print("\n📈 Data summary by slot:")
+        print("\nPERFORMANCE Data summary by slot:")
         for slot in [1, 2, 3, 4]:
             slot_data = df_long[df_long['slot'] == slot]
             if len(slot_data) > 0:
@@ -373,10 +373,10 @@ def main():
         try:
             enhance_with_advanced_features(predictor, df_long)
         except Exception as e:
-            print(f"⚠️  Advanced features skipped: {e}")
+            print(f"WARNING  Advanced features skipped: {e}")
         
         # Generate predictions
-        print("\n🎯 Generating predictions...")
+        print("\n Generating predictions...")
         predictions = predictor.generate_predictions(df_long, days=3, top_k=5)
         
         # Create wide format sheet
@@ -399,7 +399,7 @@ def main():
             shutil.copy2(latest_precise, scr1_precise_hist)
             shutil.copy2(latest_detailed, scr1_detailed_hist)
 
-            print("✅ SCR1 baseline predictions saved.")
+            print("OK SCR1 baseline predictions saved.")
             print("   Latest files:")
             print(f"     - {os.path.relpath(latest_precise, base_dir)}")
             print(f"     - {os.path.relpath(latest_detailed, base_dir)}")
@@ -407,18 +407,18 @@ def main():
             print(f"     - {os.path.relpath(scr1_precise_hist, base_dir)}")
             print(f"     - {os.path.relpath(scr1_detailed_hist, base_dir)}")
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR1 Excel outputs to reduce clutter.")
+            print("INFO  Backtest mode detected: skipping SCR1 Excel outputs to reduce clutter.")
         
         # Display tomorrow's predictions
         if len(wide_predictions) > 0:
-            print("\n🎲 Top predictions for tomorrow:")
+            print("\n Top predictions for tomorrow:")
             tomorrow_pred = wide_predictions.iloc[0]
             for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot_name in tomorrow_pred:
                     print(f"   {slot_name}: {tomorrow_pred[slot_name]}")
         
     else:
-        print("❌ Failed to load data. Please check the file path and structure.")
+        print("ERROR Failed to load data. Please check the file path and structure.")
 
 # Run the script
 if __name__ == "__main__":

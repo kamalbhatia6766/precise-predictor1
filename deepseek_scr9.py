@@ -19,8 +19,8 @@ def is_backtest_mode() -> bool:
 class UltimatePredictionEngine:
     """
     ULTIMATE PREDICTION ENGINE - WITH SPEED MODE
-    ✓ Full mode: All scripts (24min) 
-    ✓ Fast mode: Critical scripts only (10-12min)
+    OK Full mode: All scripts (24min) 
+    OK Fast mode: Critical scripts only (10-12min)
     """
     
     def __init__(self, speed_mode='full'):
@@ -65,7 +65,7 @@ class UltimatePredictionEngine:
             (['ultimate_performance*.csv'], 'logs/performance'),
         ]
         
-        print("🧹 Organizing files into structured folders...")
+        print("CLEANUP Organizing files into structured folders...")
         
         for patterns, dest_folder in movement_rules:
             dest_dir = os.path.join(base_dir, dest_folder)
@@ -84,23 +84,23 @@ class UltimatePredictionEngine:
                                 dest_path = os.path.join(dest_dir, f"{name}_{timestamp}{ext}")
                             
                             os.rename(file_path, dest_path)
-                            print(f"📁 Moved: {filename} -> {dest_folder}/")
+                            print(f" Moved: {filename} -> {dest_folder}/")
                         except Exception as e:
-                            print(f"⚠️ Could not move {file_path}: {e}")
+                            print(f"WARNING Could not move {file_path}: {e}")
     
     def load_data(self, file_path):
         """Load Excel data using shared quant_data_core loader"""
-        print("📂 Loading Excel file via quant_data_core...")
+        print(" Loading Excel file via quant_data_core...")
         try:
             df = quant_data_core.load_results_dataframe()
         except Exception as e:
-            print(f"❌ Failed to load results: {e}")
+            print(f"ERROR Failed to load results: {e}")
             return None
 
         required_cols = ["DATE", "FRBD", "GZBD", "GALI", "DSWR"]
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
-            print(f"❌ Results DataFrame missing required columns: {missing}")
+            print(f"ERROR Results DataFrame missing required columns: {missing}")
             return None
 
         slot_mapping = [
@@ -144,7 +144,7 @@ class UltimatePredictionEngine:
 
         df_clean = pd.DataFrame(all_data)
         if df_clean.empty:
-            print("❌ No valid data found after parsing results DataFrame")
+            print("ERROR No valid data found after parsing results DataFrame")
             return None
 
         df_clean["date"] = pd.to_datetime(df_clean["date"])
@@ -152,7 +152,7 @@ class UltimatePredictionEngine:
 
         start_date = df_clean["date"].min().strftime("%Y-%m-%d")
         end_date = df_clean["date"].max().strftime("%Y-%m-%d")
-        print(f"✅ Loaded {len(df_clean)} records from {start_date} to {end_date}")
+        print(f"OK Loaded {len(df_clean)} records from {start_date} to {end_date}")
 
         return df_clean
     
@@ -166,7 +166,7 @@ class UltimatePredictionEngine:
     def run_child_script(self, script_name):
         """Run a child script and parse its predictions"""
         try:
-            print(f"   🔄 Running {script_name}...")
+            print(f"   LOOP Running {script_name}...")
             
             result = subprocess.run(
                 ['py', '-3.12', script_name], 
@@ -213,20 +213,20 @@ class UltimatePredictionEngine:
             return predictions
             
         except subprocess.TimeoutExpired:
-            print(f"   ⚠️  {script_name} timed out after 300 seconds")
+            print(f"   WARNING  {script_name} timed out after 300 seconds")
             return {"FRBD": [], "GZBD": [], "GALI": [], "DSWR": []}
         except Exception as e:
-            print(f"   ⚠️  {script_name} failed: {e}")
+            print(f"   WARNING  {script_name} failed: {e}")
             return {"FRBD": [], "GZBD": [], "GALI": [], "DSWR": []}
     
     def collect_all_script_predictions(self):
         """Collect predictions from all available scripts - OPTIMIZED FOR SPEED MODE"""
-        print("🎯 Collecting predictions from scripts...")
+        print(" Collecting predictions from scripts...")
         
         if self.speed_mode == 'fast':
-            print("   ⚡ FAST MODE: Running SCR1–SCR8 once for tomorrow only")
+            print("   FAST FAST MODE: Running SCR1-SCR8 once for tomorrow only")
         else:
-            print("   🐢 FULL MODE: Running all scripts")
+            print("   SLOW FULL MODE: Running all scripts")
 
         scripts = [
             'deepseek_scr1.py',
@@ -250,11 +250,11 @@ class UltimatePredictionEngine:
                 script_times[script] = end_time - start_time
                 all_predictions[script] = preds
             else:
-                print(f"   ⚠️  {script} not found")
+                print(f"   WARNING  {script} not found")
         
         # Print timing summary
         if script_times:
-            print("   ⏰ Script execution times:")
+            print("   TIME Script execution times:")
             for script, exec_time in script_times.items():
                 print(f"     {script}: {exec_time:.1f}s")
         
@@ -320,7 +320,7 @@ class UltimatePredictionEngine:
     
     def predict_for_target_date(self, df_history, target_date):
         """Generate predictions for a specific target date - OPTIMIZED"""
-        print(f"   🎯 Predicting for {target_date}...")
+        print(f"    Predicting for {target_date}...")
         
         # Collect predictions from all scripts
         all_script_preds = self.collect_all_script_predictions()
@@ -402,12 +402,12 @@ class UltimatePredictionEngine:
     
     def backtest_recent_days(self, df, days=3):
         """Backtest on recent complete days - OPTIMIZED FOR SPEED MODE"""
-        print(f"\n📊 Running backtest for last {days} days...")
+        print(f"\nDATA Running backtest for last {days} days...")
         
         # SPEED MODE OPTIMIZATION: Reduce backtest days
         if self.speed_mode == 'fast':
             days = 1  # Only test most recent day in fast mode
-            print("   🚀 SPEED MODE: Testing only most recent day")
+            print("   FAST SPEED MODE: Testing only most recent day")
         
         try:
             # Find dates with all four slots
@@ -416,20 +416,20 @@ class UltimatePredictionEngine:
             complete_dates.sort()
             
             if len(complete_dates) < days:
-                print(f"⚠️  Only {len(complete_dates)} complete dates found, using all")
+                print(f"WARNING  Only {len(complete_dates)} complete dates found, using all")
                 test_dates = complete_dates[-days:] if len(complete_dates) > 0 else []
             else:
                 test_dates = complete_dates[-days:]
             
             if not test_dates:
-                print("❌ No complete dates found for backtesting")
+                print("ERROR No complete dates found for backtesting")
                 return pd.DataFrame()
             
             backtest_results = []
             
             for test_date in test_dates:
                 test_date_str = test_date.strftime('%Y-%m-%d')
-                print(f"   🔍 Testing {test_date_str}...")
+                print(f"   SEARCH Testing {test_date_str}...")
                 
                 # Split data
                 history_df = df[df['date'] < test_date]
@@ -484,12 +484,12 @@ class UltimatePredictionEngine:
                 else:
                     results_df.to_csv(perf_file, index=False)
                 
-                print(f"✅ Backtest results saved to {perf_file}")
+                print(f"OK Backtest results saved to {perf_file}")
             
             return results_df
             
         except Exception as e:
-            print(f"❌ Backtest failed: {e}")
+            print(f"ERROR Backtest failed: {e}")
             return pd.DataFrame()
     
     def detect_status(self, df):
@@ -504,15 +504,15 @@ class UltimatePredictionEngine:
         """Generate complete predictions"""
         latest_date, filled_slots, empty_slots = self.detect_status(df)
         
-        print(f"\n📅 Latest Date: {latest_date.strftime('%Y-%m-%d')}")
-        print(f"✅ Filled: {[self.slot_names[s] for s in filled_slots]}")
-        print(f"❌ Empty: {[self.slot_names[s] for s in empty_slots]}")
+        print(f"\nDATE Latest Date: {latest_date.strftime('%Y-%m-%d')}")
+        print(f"OK Filled: {[self.slot_names[s] for s in filled_slots]}")
+        print(f"ERROR Empty: {[self.slot_names[s] for s in empty_slots]}")
         
         predictions = []
         
         # TODAY'S EMPTY SLOTS (skip in FAST mode)
         if self.speed_mode != 'fast' and empty_slots:
-            print(f"\n🎯 Predicting TODAY's empty slots...")
+            print(f"\n Predicting TODAY's empty slots...")
             date_str = latest_date.strftime('%Y-%m-%d')
 
             for slot in empty_slots:
@@ -540,12 +540,12 @@ class UltimatePredictionEngine:
                         'opposites': ', '.join([f"{n:02d}" for n in opposites]) if rank == 1 else ''
                     })
         elif self.speed_mode == 'fast' and empty_slots:
-            print("\n⚡ FAST MODE: Skipping today's empty-slot predictions")
+            print("\nFAST FAST MODE: Skipping today's empty-slot predictions")
         
         # TOMORROW'S ALL SLOTS
         tomorrow = latest_date + timedelta(days=1)
         date_str = tomorrow.strftime('%Y-%m-%d')
-        print(f"\n🎯 Predicting TOMORROW ({date_str})...")
+        print(f"\n Predicting TOMORROW ({date_str})...")
         
         # Use the main prediction function
         tomorrow_preds = self.predict_for_target_date(df, tomorrow)
@@ -626,7 +626,7 @@ class UltimatePredictionEngine:
 
             with open(analysis_file, 'w', encoding='utf-8') as f:
                 f.write("=" * 70 + "\n")
-                f.write("  🎯 SCR11 ULTIMATE PREDICTION ENGINE - REPORT\n")
+                f.write("   SCR11 ULTIMATE PREDICTION ENGINE - REPORT\n")
                 f.write("=" * 70 + "\n\n")
                 f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"Speed Mode: {self.speed_mode.upper()}\n")
@@ -655,7 +655,7 @@ class UltimatePredictionEngine:
                             if f'{slot}_OPP' in row:
                                 f.write(f"       Opp: {row[f'{slot}_OPP']}\n")
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR9 file outputs.")
+            print("INFO  Backtest mode detected: skipping SCR9 file outputs.")
         
         # Return file paths for console display
         return wide_df, pred_file, detail_file, diag_file, analysis_file
@@ -663,8 +663,8 @@ class UltimatePredictionEngine:
     def run(self, file_path):
         """Main execution"""
         print("=" * 70)
-        print(f"  🎯 SCR11 ULTIMATE PREDICTION ENGINE - {self.speed_mode.upper()} MODE")
-        print("  ✓ TRUE SCR1-10 Integration + Backtesting + Organized Output")
+        print(f"   SCR11 ULTIMATE PREDICTION ENGINE - {self.speed_mode.upper()} MODE")
+        print("  OK TRUE SCR1-10 Integration + Backtesting + Organized Output")
         print(f"  Mode: {self.speed_mode.upper()}")
         print("=" * 70)
         
@@ -677,21 +677,21 @@ class UltimatePredictionEngine:
         # Add slot names for analysis
         df['slot_name'] = df['slot'].map(self.slot_names)
         
-        print(f"\n📊 Data Summary:")
+        print(f"\nDATA Data Summary:")
         for slot in [1, 2, 3, 4]:
             slot_data = df[df['slot'] == slot]
             print(f"   {self.slot_names[slot]}: {len(slot_data)} records")
         
         # Run backtest (skip entirely in FAST mode)
         if self.speed_mode == 'fast':
-            print("\n🏎 FAST MODE: Skipping 3-day backtest (using existing reality metrics)")
+            print("\nFAST FAST MODE: Skipping 3-day backtest (using existing reality metrics)")
             backtest_results = pd.DataFrame()
         else:
             backtest_results = self.backtest_recent_days(df, days=3)
 
         # Print backtest summary
         if not backtest_results.empty:
-            print(f"\n📊 Backtest (last {len(backtest_results['date'].unique())} days):")
+            print(f"\nDATA Backtest (last {len(backtest_results['date'].unique())} days):")
             for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 slot_results = backtest_results[backtest_results['slot'] == slot]
                 if not slot_results.empty:
@@ -699,12 +699,12 @@ class UltimatePredictionEngine:
                     hit_top5 = slot_results['hit_top5'].sum()
                     print(f"   {slot}: {hit_top5}/{total} hit_top5 ({hit_top5/total*100:.1f}%)")
         elif self.speed_mode == 'fast':
-            print("\n📊 Backtest metrics unavailable in FAST mode (skipped to save time)")
+            print("\nDATA Backtest metrics unavailable in FAST mode (skipped to save time)")
 
         if self.speed_mode == 'fast':
-            print("\n⚡ FAST MODE: Only generating TOMORROW predictions (no historical backtest)")
+            print("\nFAST FAST MODE: Only generating TOMORROW predictions (no historical backtest)")
         else:
-            print("\n🐢 FULL MODE: Running backtest + TOMORROW predictions")
+            print("\nSLOW FULL MODE: Running backtest + TOMORROW predictions")
 
         # Generate predictions
         predictions_df = self.generate_predictions(df)
@@ -714,12 +714,12 @@ class UltimatePredictionEngine:
         total_time = end_time - start_time
         
         print("\n" + "=" * 70)
-        print("  📊 RESULTS")
+        print("  DATA RESULTS")
         print("=" * 70)
         
         for date in wide_df['date'].unique():
             row = wide_df[wide_df['date'] == date].iloc[0]
-            print(f"\n📅 {date} ({row['type']}):")
+            print(f"\nDATE {date} ({row['type']}):")
             print("-" * 70)
             for slot in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                 if slot in row:
@@ -728,13 +728,13 @@ class UltimatePredictionEngine:
                         print(f"         Opp: {row[f'{slot}_OPP']}")
         
         print("\n" + "=" * 70)
-        print("✅ Files saved:")
+        print("OK Files saved:")
         print(f"   - {os.path.relpath(pred_file)}")
         print(f"   - {os.path.relpath(detail_file)}")
         print(f"   - {os.path.relpath(diag_file)}")
         print(f"   - {os.path.relpath(analysis_file)}")
         print(f"   - logs/performance/ultimate_performance.csv")
-        print(f"\n⏰ Total execution time: {total_time:.1f} seconds ({total_time/60:.1f} minutes)")
+        print(f"\nTIME Total execution time: {total_time:.1f} seconds ({total_time/60:.1f} minutes)")
         print("=" * 70)
 
 if __name__ == "__main__":

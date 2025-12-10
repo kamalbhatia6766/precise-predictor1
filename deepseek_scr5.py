@@ -34,21 +34,21 @@ class AutoUpdatePredictor:
     def load_updated_data(self, file_path):
         """Load updated data via canonical quant_excel_loader."""
         try:
-            print("📂 Loading updated data via quant_excel_loader.")
+            print(" Loading updated data via quant_excel_loader.")
             df = load_results_excel(file_path)
             if df is None or len(df) == 0:
-                print("❌ No valid data returned from quant_excel_loader")
+                print("ERROR No valid data returned from quant_excel_loader")
                 return None
 
 
             latest_date = df['date'].max()
-            print(f"✅ Successfully loaded {len(df)} records")
-            print(f"📅 Data range: {df['date'].min().strftime('%Y-%m-%d')} to {latest_date.strftime('%Y-%m-%d')}")
-            print(f"🕐 Latest data point: {latest_date.strftime('%Y-%m-%d')}")
+            print(f"OK Successfully loaded {len(df)} records")
+            print(f"DATE Data range: {df['date'].min().strftime('%Y-%m-%d')} to {latest_date.strftime('%Y-%m-%d')}")
+            print(f"TIME Latest data point: {latest_date.strftime('%Y-%m-%d')}")
             return df
 
         except Exception as e:
-            print(f"❌ Error loading data from {file_path}: {e}")
+            print(f"ERROR Error loading data from {file_path}: {e}")
             return None
 
     def check_data_freshness(self, df):
@@ -60,16 +60,16 @@ class AutoUpdatePredictor:
         today = datetime.now().date()
         days_since_last_data = (today - latest_date.date()).days
         
-        print(f"\n🔍 DATA FRESHNESS CHECK:")
+        print(f"\nSEARCH DATA FRESHNESS CHECK:")
         print(f"   Latest data: {latest_date.strftime('%Y-%m-%d')}")
         print(f"   Today: {today.strftime('%Y-%m-%d')}")
         print(f"   Days since last data: {days_since_last_data}")
         
         if days_since_last_data > 1:
-            print(f"⚠️  Warning: Data is {days_since_last_data} days old")
-            print("💡 Consider updating your Excel file with latest results")
+            print(f"WARNING  Warning: Data is {days_since_last_data} days old")
+            print("TIP Consider updating your Excel file with latest results")
         else:
-            print("✅ Data is up-to-date")
+            print("OK Data is up-to-date")
             
         return days_since_last_data <= 1
 
@@ -402,7 +402,7 @@ class AutoUpdatePredictor:
         latest_data_date = df['date'].max().date()
         start_date = latest_data_date + timedelta(days=1)
         
-        print(f"\n🎯 Generating predictions from {start_date}")
+        print(f"\n Generating predictions from {start_date}")
         
         for day_offset in range(days):
             target_date = start_date + timedelta(days=day_offset)
@@ -486,18 +486,18 @@ class AutoUpdatePredictor:
                 total_hits = perf_df['accuracy'].sum()
                 overall_accuracy = (total_hits / total_predictions) * 100
                 
-                print(f"\n📈 PERFORMANCE HISTORY:")
+                print(f"\nPERFORMANCE PERFORMANCE HISTORY:")
                 print(f"   Total Predictions: {total_predictions}")
                 print(f"   Overall Accuracy: {overall_accuracy:.1f}%")
                 
                 return overall_accuracy
         else:
-            print("\n📈 PERFORMANCE HISTORY: No performance data yet")
+            print("\nPERFORMANCE PERFORMANCE HISTORY: No performance data yet")
         return 0
 
     def generate_confidence_report(self, df):
         """Generate confidence report for current predictions"""
-        print("\n🔍 PREDICTION CONFIDENCE ANALYSIS:")
+        print("\nSEARCH PREDICTION CONFIDENCE ANALYSIS:")
         
         # Get tomorrow's predictions (first date in predictions)
         if len(df) > 0:
@@ -541,7 +541,7 @@ class AutoUpdatePredictor:
 
 def main():
     print("=== AUTO-UPDATE PREDICTOR SCR5 ===")
-    print("🎯 6-Strategy Ensemble + Auto Data Refresh")
+    print(" 6-Strategy Ensemble + Auto Data Refresh")
     
     # Create SCR5-specific directories
     BASE_DIR = Path(__file__).resolve().parent
@@ -551,7 +551,7 @@ def main():
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    print(f"🧹 SCR5: using predictions\\deepseek_scr5 for all outputs...")
+    print(f"CLEANUP SCR5: using predictions\\deepseek_scr5 for all outputs...")
     
     # Initialize predictor with SCR5-specific performance log
     perf_path = LOG_DIR / "scr5_performance.csv"
@@ -567,7 +567,7 @@ def main():
         predictor.check_data_freshness(df)
         
         # Show data summary
-        print(f"\n📊 DATA SUMMARY:")
+        print(f"\nDATA DATA SUMMARY:")
         for slot in [1, 2, 3, 4]:
             slot_data = df[df['slot'] == slot]
             latest_slot_date = slot_data['date'].max().strftime('%Y-%m-%d')
@@ -577,7 +577,7 @@ def main():
         predictor.get_performance_stats()
         
         # Generate predictions
-        print("\n🎯 Generating updated predictions...")
+        print("\n Generating updated predictions...")
         predictions = predictor.generate_predictions(df, days=3, top_k=5)
         
         # Create output files in SCR5 directory
@@ -586,14 +586,14 @@ def main():
         )
         
         if not is_backtest_mode():
-            print("✅ Updated predictions generated successfully!")
-            print("💾 Files saved:")
+            print("OK Updated predictions generated successfully!")
+            print(" Files saved:")
             print(f"   - {pred_path}")
             print(f"   - {detail_path}")
             if report_path:
                 print(f"   - {report_path}")
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR5 file outputs.")
+            print("INFO  Backtest mode detected: skipping SCR5 file outputs.")
         
         # Display predictions
         if len(wide_predictions) > 0:
@@ -603,9 +603,9 @@ def main():
             today = datetime.now().date()
 
             if first_date == today + timedelta(days=1):
-                print(f"\n🎲 PREDICTIONS FOR TOMORROW ({first_date.strftime('%Y-%m-%d')}):")
+                print(f"\n PREDICTIONS FOR TOMORROW ({first_date.strftime('%Y-%m-%d')}):")
             else:
-                print(f"\n🎲 PREDICTIONS FOR NEXT UNKNOWN RESULT DATE: {first_date.strftime('%Y-%m-%d')}")
+                print(f"\n PREDICTIONS FOR NEXT UNKNOWN RESULT DATE: {first_date.strftime('%Y-%m-%d')}")
 
             first_date_str = first_date.strftime('%Y-%m-%d')
             tomorrow_pred = wide_predictions[wide_predictions['date'] == first_date_str].iloc[0]
@@ -616,13 +616,13 @@ def main():
         # Generate confidence report
         predictor.generate_confidence_report(predictions)
         
-        print("\n🔬 Methodology: 6-strategy ensemble with auto-update")
-        print("   • Bayesian Probability • Gap Analysis • Pattern Mining")
-        print("   • Frequency Momentum • Markov Chains • Statistical Forest")
-        print(f"\n💡 Next update: Simply add new results to Excel file and re-run")
+        print("\n Methodology: 6-strategy ensemble with auto-update")
+        print("   - Bayesian Probability - Gap Analysis - Pattern Mining")
+        print("   - Frequency Momentum - Markov Chains - Statistical Forest")
+        print(f"\nTIP Next update: Simply add new results to Excel file and re-run")
         
     else:
-        print("❌ Failed to load data. Please check the Excel file.")
+        print("ERROR Failed to load data. Please check the Excel file.")
 
 if __name__ == "__main__":
     main()

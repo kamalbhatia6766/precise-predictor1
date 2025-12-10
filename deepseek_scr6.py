@@ -64,7 +64,7 @@ class UltimatePredictorPro:
         self.cache_file = os.path.join(self.output_dir, "scr6_cache.json")
         self.cache_wide_file = os.path.join(self.output_dir, "scr6_predictions_latest.xlsx")
         self.cache_detailed_file = os.path.join(self.output_dir, "scr6_predictions_latest_detailed.xlsx")
-        print(f"📁 Output directory: {self.output_dir}")
+        print(f" Output directory: {self.output_dir}")
     
     def initialize_cross_script_tracking(self):
         """Initialize cross-script pattern learning"""
@@ -73,7 +73,7 @@ class UltimatePredictorPro:
         self.script_effectiveness = defaultdict(lambda: defaultdict(float))
         self.cross_date_patterns = defaultdict(lambda: defaultdict(int))
         
-        print("🔄 Cross-script pattern tracking initialized")
+        print("LOOP Cross-script pattern tracking initialized")
     
     def initialize_pattern_packs(self):
         """Initialize advanced pattern detection packs - PHASE 2"""
@@ -126,7 +126,7 @@ class UltimatePredictorPro:
         self.cross_slot_patterns = defaultdict(lambda: defaultdict(int))
         self.pattern_performance = defaultdict(lambda: defaultdict(list))
         
-        print("✅ Advanced pattern packs initialized:")
+        print("OK Advanced pattern packs initialized:")
         print(f"   - 3-digit patterns: {len(self.pattern_3digit)} families")
         print(f"   - 4-digit patterns: {len(self.pattern_4digit)} families") 
         print(f"   - 6-digit patterns: {len(self.pattern_6digit)} families")
@@ -161,20 +161,20 @@ class UltimatePredictorPro:
     def load_updated_data(self, file_path):
         """Load updated data via canonical quant_excel_loader."""
         try:
-            print("📂 SCR6: Loading updated data via quant_excel_loader.")
+            print(" SCR6: Loading updated data via quant_excel_loader.")
             df = load_results_excel(file_path)
             if df is None or len(df) == 0:
-                print("❌ SCR6: No valid data returned from quant_excel_loader")
+                print("ERROR SCR6: No valid data returned from quant_excel_loader")
                 return None
 
             latest_date = df['date'].max()
-            print(f"✅ SCR6: Successfully loaded {len(df)} records")
-            print(f"📅 SCR6: Data range: {df['date'].min().strftime('%Y-%m-%d')} to {latest_date.strftime('%Y-%m-%d')}")
-            print(f"🕐 SCR6: Latest data point: {latest_date.strftime('%Y-%m-%d')}")
+            print(f"OK SCR6: Successfully loaded {len(df)} records")
+            print(f"DATE SCR6: Data range: {df['date'].min().strftime('%Y-%m-%d')} to {latest_date.strftime('%Y-%m-%d')}")
+            print(f"TIME SCR6: Latest data point: {latest_date.strftime('%Y-%m-%d')}")
             return df
 
         except Exception as e:
-            print(f"❌ SCR6: Error loading data from {file_path}: {e}")
+            print(f"ERROR SCR6: Error loading data from {file_path}: {e}")
             return None
 
     def compute_data_signature(self, df):
@@ -228,10 +228,10 @@ class UltimatePredictorPro:
             with open(self.cache_file, "w") as f:
                 json.dump(cache_payload, f, indent=2)
             print(
-                f"💾 SCR6 cache rebuilt for current dataset – signature {signature.get('last_date', '?')} / {signature.get('rows', 0)} rows."
+                f" SCR6 cache rebuilt for current dataset - signature {signature.get('last_date', '?')} / {signature.get('rows', 0)} rows."
             )
         except Exception as e:
-            print(f"⚠️ SCR6: Failed to persist cache due to {e}")
+            print(f"WARNING SCR6: Failed to persist cache due to {e}")
 
     def clean_number(self, x):
         """Convert to 2-digit number"""
@@ -331,13 +331,13 @@ class UltimatePredictorPro:
     # ==================== CROSS-SCRIPT PATTERN LEARNING ====================
     def analyze_cross_script_patterns(self, df):
         """Analyze patterns across different scripts and dates - OPTIMIZED"""
-        print("🔄 Analyzing cross-script patterns...")
+        print("LOOP Analyzing cross-script patterns...")
         
         # Load prediction files from other scripts
         script_predictions = self.load_other_script_predictions()
         
         if not script_predictions:
-            print("   ⚠️  No other script predictions found for cross-analysis")
+            print("   WARNING  No other script predictions found for cross-analysis")
             return
         
         # Analyze cross-script effectiveness
@@ -367,12 +367,12 @@ class UltimatePredictorPro:
         
         # Print cross-script effectiveness
         if self.script_effectiveness:
-            print("📊 Cross-script effectiveness summary:")
+            print("DATA Cross-script effectiveness summary:")
             for script_name, slot_data in list(self.script_effectiveness.items())[:3]:
                 for slot, effectiveness in list(slot_data.items())[:2]:
                     print(f"   {script_name} -> {slot}: {effectiveness:.3f}")
         else:
-            print("   📊 No cross-script patterns found")
+            print("   DATA No cross-script patterns found")
 
     def load_other_script_predictions(self):
         """Load prediction files from other scripts - OPTIMIZED"""
@@ -397,7 +397,7 @@ class UltimatePredictorPro:
                         full_path = os.path.join(pred_path, latest_file)
                         predictions_df = pd.read_excel(full_path)
                         script_predictions[script_folder] = predictions_df
-                        print(f"   ✅ Loaded predictions from {script_folder}")
+                        print(f"   OK Loaded predictions from {script_folder}")
             except Exception as e:
                 continue  # Silent fail for missing scripts
         
@@ -419,7 +419,7 @@ class UltimatePredictorPro:
             
             if actual_slot != pred_slot and actual_number in pred_numbers:
                 # Cross-slot hit found!
-                pattern_key = f"{script_name}_{pred_slot}→{actual_slot}"
+                pattern_key = f"{script_name}_{pred_slot}->{actual_slot}"
                 self.cross_script_patterns[pattern_key][actual_number] += 1
                 
                 # Update script effectiveness
@@ -452,7 +452,7 @@ class UltimatePredictorPro:
         # Check cross-slot patterns
         for pattern_key, number_counts in self.cross_script_patterns.items():
             if number in number_counts:
-                # Example: "scr3_FRBD→DSWR" pattern
+                # Example: "scr3_FRBD->DSWR" pattern
                 parts = pattern_key.split('_')
                 if len(parts) >= 2:
                     source_script = parts[0]
@@ -810,7 +810,7 @@ class UltimatePredictorPro:
     # ==================== ADVANCED PATTERN DETECTION ====================
     def detect_cross_slot_patterns(self, df):
         """Detect patterns across different slots and dates"""
-        print("🔄 Analyzing cross-slot patterns...")
+        print("LOOP Analyzing cross-slot patterns...")
         
         # Group by date and collect all numbers
         date_slot_data = defaultdict(dict)
@@ -833,12 +833,12 @@ class UltimatePredictorPro:
             for curr_slot, curr_number in current_data.items():
                 for prev_slot, prev_number in prev_data.items():
                     if curr_number == prev_number:
-                        pattern_key = f"{prev_slot}→{curr_slot}"
+                        pattern_key = f"{prev_slot}->{curr_slot}"
                         # FIX: Direct integer increment for defaultdict(int)
                         self.cross_slot_patterns[pattern_key][curr_number] += 1
         
         # Print pattern summary
-        print("📊 Cross-slot pattern summary:")
+        print("DATA Cross-slot pattern summary:")
         pattern_count = 0
         for pattern, numbers in self.cross_slot_patterns.items():
             if numbers and pattern_count < 5:
@@ -850,7 +850,7 @@ class UltimatePredictorPro:
 
     def analyze_pattern_performance(self, df):
         """Analyze performance of different pattern packs - PHASE 2"""
-        print("📈 Analyzing pattern pack performance...")
+        print("PERFORMANCE Analyzing pattern pack performance...")
         
         for slot in [1, 2, 3, 4]:
             slot_name = self.slot_names[slot]
@@ -1239,8 +1239,8 @@ class UltimatePredictorPro:
         # PHASE 4: Determine which slots need prediction for today
         today_predictions = self.get_todays_missing_slots(df, latest_data_date)
         
-        print(f"\n🎯 Generating predictions from {latest_data_date}")
-        print(f"📅 Today's incomplete slots: {[self.slot_names[s] for s in today_predictions] if today_predictions else 'None'}")
+        print(f"\n Generating predictions from {latest_data_date}")
+        print(f"DATE Today's incomplete slots: {[self.slot_names[s] for s in today_predictions] if today_predictions else 'None'}")
         
         # Predict missing slots for today (PHASE 4)
         for slot in today_predictions:
@@ -1353,10 +1353,10 @@ class UltimatePredictorPro:
             self.save_pattern_analysis(pattern_file)
             self.save_cross_script_analysis(cross_script_file)
         else:
-            print("ℹ️  Backtest mode detected: skipping SCR6 file outputs.")
+            print("INFO  Backtest mode detected: skipping SCR6 file outputs.")
         
         # Print actual file paths for user confirmation
-        print(f"📁 Organized folder: {self.output_dir}")
+        print(f" Organized folder: {self.output_dir}")
 
         return wide_df
 
@@ -1510,18 +1510,18 @@ class UltimatePredictorPro:
                 total_hits = perf_df['accuracy'].sum()
                 overall_accuracy = (total_hits / total_predictions) * 100
                 
-                print(f"\n📈 PERFORMANCE HISTORY:")
+                print(f"\nPERFORMANCE PERFORMANCE HISTORY:")
                 print(f"   Total Predictions: {total_predictions}")
                 print(f"   Overall Accuracy: {overall_accuracy:.1f}%")
                 
                 return overall_accuracy
         else:
-            print("\n📈 PERFORMANCE HISTORY: No performance data yet")
+            print("\nPERFORMANCE PERFORMANCE HISTORY: No performance data yet")
         return 0
 
 def main():
     print("=== ULTIMATE PREDICTOR SCR6 ENHANCED ===")
-    print("🎯 10-Strategy Ensemble + Advanced Patterns + Cross-Script Learning")
+    print(" 10-Strategy Ensemble + Advanced Patterns + Cross-Script Learning")
     
     predictor = UltimatePredictorPro()
     
@@ -1538,7 +1538,7 @@ def main():
         cache_meta = predictor.load_cache_meta()
 
         # Show data summary
-        print(f"\n📊 DATA SUMMARY:")
+        print(f"\nDATA DATA SUMMARY:")
         for slot in [1, 2, 3, 4]:
             slot_data = df[df['slot'] == slot]
             latest_slot_date = slot_data['date'].max().strftime('%Y-%m-%d') if len(slot_data) else 'N/A'
@@ -1552,7 +1552,7 @@ def main():
 
         if predictor.is_cache_hit(signature, cache_meta):
             print(
-                f"ℹ️ SCR6 cache hit – reused predictions for data signature last_date={signature.get('last_date')} "
+                f"INFO SCR6 cache hit - reused predictions for data signature last_date={signature.get('last_date')} "
                 f"rows={signature.get('rows')}"
             )
             try:
@@ -1561,16 +1561,16 @@ def main():
                 predictions = None
 
         if predictions is None:
-            print("\n🎯 Generating ultimate predictions with cross-script intelligence...")
+            print("\n Generating ultimate predictions with cross-script intelligence...")
             predictions = predictor.generate_predictions(df, days=3, top_k=5)
             wide_predictions = predictor.create_output_files(predictions, df)
             predictor.persist_cache(signature, predictions, wide_predictions)
         else:
             wide_predictions = predictor.create_output_files(predictions, df)
-            print("✅ SCR6 cache reused successfully (no retraining needed).")
+            print("OK SCR6 cache reused successfully (no retraining needed).")
 
-        print("✅ Ultimate predictions generated successfully!")
-        print("💾 Files saved to organized folders:")
+        print("OK Ultimate predictions generated successfully!")
+        print(" Files saved to organized folders:")
         print(f"   - {predictor.output_dir}/ultimate_predictions_YYYYMMDD_HHMMSS.xlsx")
         print(f"   - {predictor.output_dir}/ultimate_detailed_YYYYMMDD_HHMMSS.xlsx")
         print(f"   - {predictor.output_dir}/ultimate_analysis_YYYYMMDD_HHMMSS.txt")
@@ -1583,7 +1583,7 @@ def main():
             today_date = df['date'].max().date().strftime('%Y-%m-%d')
             today_pred = wide_predictions[wide_predictions['date'] == today_date]
             if len(today_pred) > 0:
-                print(f"\n🎲 TODAY'S PREDICTIONS FOR {today_date}:")
+                print(f"\n TODAY'S PREDICTIONS FOR {today_date}:")
                 today_row = today_pred.iloc[0]
                 for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                     if slot_name in today_row and pd.notna(today_row[slot_name]):
@@ -1593,27 +1593,27 @@ def main():
             tomorrow_date = (df['date'].max().date() + timedelta(days=1)).strftime('%Y-%m-%d')
             tomorrow_pred = wide_predictions[wide_predictions['date'] == tomorrow_date]
             if len(tomorrow_pred) > 0:
-                print(f"\n🎲 TOMORROW'S PREDICTIONS FOR {tomorrow_date}:")
+                print(f"\n TOMORROW'S PREDICTIONS FOR {tomorrow_date}:")
                 tomorrow_row = tomorrow_pred.iloc[0]
                 for slot_name in ['FRBD', 'GZBD', 'GALI', 'DSWR']:
                     if slot_name in tomorrow_row and pd.notna(tomorrow_row[slot_name]):
                         print(f"   {slot_name}: {tomorrow_row[slot_name]}")
         
-        print("\n🔬 ENHANCED METHODOLOGY:")
-        print("   • Real LSTM (TensorFlow retracing FIXED) - PHASE 1")
-        print("   • XGBoost • LightGBM • Neural Network")
-        print("   • Bayesian • Gap Analysis • Pattern Mining • Momentum")
-        print("   • Markov Chains • Statistical Forest")
-        print("   • 3-digit, 4-digit & 6-digit pattern families (including 164950/164950) - PHASE 2")
-        print("   • S40 special number tracking - PHASE 2")
-        print("   • Cross-script pattern learning & intelligence")
-        print("   • Organized folder structure - PHASE 3")
-        print("   • Partial-day prediction scheduling - PHASE 4")
-        print("   • Aggressive TensorFlow suppression - OPTIMIZED")
-        print("   • Performance-optimized cross-script loading - OPTIMIZED")
+        print("\n ENHANCED METHODOLOGY:")
+        print("   - Real LSTM (TensorFlow retracing FIXED) - PHASE 1")
+        print("   - XGBoost - LightGBM - Neural Network")
+        print("   - Bayesian - Gap Analysis - Pattern Mining - Momentum")
+        print("   - Markov Chains - Statistical Forest")
+        print("   - 3-digit, 4-digit & 6-digit pattern families (including 164950/164950) - PHASE 2")
+        print("   - S40 special number tracking - PHASE 2")
+        print("   - Cross-script pattern learning & intelligence")
+        print("   - Organized folder structure - PHASE 3")
+        print("   - Partial-day prediction scheduling - PHASE 4")
+        print("   - Aggressive TensorFlow suppression - OPTIMIZED")
+        print("   - Performance-optimized cross-script loading - OPTIMIZED")
         
     else:
-        print("❌ Failed to load data.")
+        print("ERROR Failed to load data.")
 
 
 def build_ml_feature_dataframe(history_numbers):
